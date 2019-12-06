@@ -1,0 +1,828 @@
+---
+title: "Supplemental"
+output: html_document
+---
+```{r}
+induce_exp <- read.table("~/Desktop/InducibleArchitectures/processed_data/induce_exp(updated).txt", header = T)
+options(digits=3)
+
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+induce_distal <- subset(induce_exp, grepl("DISTAL", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Offset", "Min_35", "Core", "Min_10"), sep = "-", remove = F)
+
+induce_distal$Min_35 <- with(induce_distal, reorder(Min_35, ratio, median))
+induce_distal$Min_10 <- with(induce_distal, reorder(Min_10, ratio, median))
+induce_distal$Core <- with(induce_distal, reorder(Core, ratio, median))
+induce_distal$Distal <- with(induce_distal, reorder(Distal, ratio, median))
+induce_distal$Core <- gsub("_core", "", induce_distal$Core)
+
+induce_steric <- subset(induce_exp, grepl("STERIC", induce_exp$name)) %>% 
+  separate(col = 'name', into = c("Library", "Loop_Distance", "UP", "Core", "Extended_Min_10", "Min_10", "Proximal"), sep = "-", remove = F)
+induce_steric$Min_10 <- with(induce_steric, reorder(Min_10, ratio, median))
+induce_steric$Core <- with(induce_steric, reorder(Core, ratio, median))
+induce_steric$Proximal <- with(induce_steric, reorder(Proximal, ratio, median))
+
+induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+```
+
+```{r}
+# Figure S3: Barcode density graphs and replicate correlations
+# Histograms
+
+# COMBO LIBRARY
+med_barcode_unind <- median(filter(induce_exp, grepl("COMBO", induce_exp$name))$avg_num_unind_bc)
+med_barcode_ind <- median(filter(induce_exp, grepl("COMBO", induce_exp$name))$avg_num_ind_bc)
+h1 <- induce_combo %>%
+  gather(Condition, Count, 'avg_num_ind_bc':'avg_num_unind_bc') %>%
+  ggplot(aes(Count, fill = Condition)) + 
+  scale_fill_manual(values = c("#DF678C", "#3D155F"), labels = c('Induced', 'Uninduced')) +
+  geom_histogram(alpha = 0.7, position = 'identity', color = 'black', binwidth = 1) +
+  geom_vline(xintercept = med_barcode_unind, linetype = 'dashed') +
+  annotate("text", x =17, y = 150, label = 'Median = 9', size = 7) +
+  labs(x = 'Number of Barcodes', y = 'Count', title = 'Pcombo') +
+      theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# DISTAL LIBRARY
+med_barcode_unind <- median(filter(induce_exp, grepl("DISTAL", induce_exp$name))$avg_num_unind_bc)
+med_barcode_ind <- median(filter(induce_exp, grepl("DISTAL", induce_exp$name))$avg_num_ind_bc)
+h2 <- induce_distal %>%
+  gather(Condition, Count, 'avg_num_ind_bc':'avg_num_unind_bc') %>%
+  ggplot(aes(Count, fill = Condition)) + 
+  scale_fill_manual(values = c("#DF678C", "#3D155F"), labels = c('Induced', 'Uninduced')) +
+  geom_histogram(alpha = 0.7, position = 'identity', color = 'black', binwidth = 1) +
+  geom_vline(xintercept = med_barcode_ind, linetype = 'dashed') +
+  geom_vline(xintercept = med_barcode_unind, linetype = 'dashed') +
+  annotate("text", x =17, y = 400, label = 'Median = 7', size = 7) +
+  labs(x = 'Number of Barcodes', y = 'Count', title = 'Pspacer') +
+      theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# MULTIPLE LIBRARY
+med_barcode_unind <- median(filter(induce_exp, grepl("MULTIPLE", induce_exp$name))$avg_num_unind_bc)
+med_barcode_ind <- median(filter(induce_exp, grepl("MULTIPLE", induce_exp$name))$avg_num_ind_bc)
+h3 <- induce_multiple %>%
+  gather(Condition, Count, 'avg_num_ind_bc':'avg_num_unind_bc') %>%
+  ggplot(aes(Count, fill = Condition)) + 
+  scale_fill_manual(values = c("#DF678C", "#3D155F"), labels= c('Induced', 'Uninduced')) +
+  geom_histogram(alpha = 0.7, position = 'identity', color = 'black', binwidth = 1) +
+  geom_vline(xintercept = med_barcode_unind, linetype = 'dashed') +
+  labs(x = 'Number of Barcodes', y = 'Count', title ='Pmultiple') +
+    theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20), 
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16)) +
+    annotate("text", x =20, y = 170, label = 'Median = 9', size = 7)
+# STERIC LIBRARY
+med_barcode_unind <- median(filter(induce_exp, grepl("STERIC", induce_exp$name))$avg_num_unind_bc)
+med_barcode_ind <- median(filter(induce_exp, grepl("STERIC", induce_exp$name))$avg_num_ind_bc)
+h4 <- induce_steric %>%
+  gather(Condition, Count, 'avg_num_unind_bc':'avg_num_ind_bc') %>%
+  ggplot(aes(Count, fill = Condition)) + 
+  scale_fill_manual(values = c("#DF678C", "#3D155F"), labels = c('Induced', 'Uninduced')) +
+  geom_histogram(alpha = 0.7, position = 'identity', color = 'black', binwidth = 1) +
+  geom_vline(xintercept = med_barcode_unind, linetype = 'dashed') +
+  annotate("text", x =17, y = 150, label = 'Median = 8', size = 7) +
+  labs(x = 'Number of Barcodes', y = 'Count', title = 'Psteric') +
+      theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20), 
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# ======================================================================================================
+# CORRELATION PLOTS
+
+# negative controls
+test <- subset(induce_exp, grepl("neg_control", induce_exp$name)) 
+
+# COMBO
+corr_I <- cor(induce_combo$sum_RNA_exp_Induced_1, induce_combo$sum_RNA_exp_Induced_2) #Pearson correlation
+corr_UI <- cor(induce_combo$sum_RNA_exp_UnInduced_1, induce_combo$sum_RNA_exp_UnInduced_2) #Pearson correlation
+# NORMALIZED INDUCED
+c1a <- ggplot(induce_combo, aes(x = sum_RNA_exp_Induced_1, y = sum_RNA_exp_Induced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_I, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pcombo Induced') +
+  geom_point(data=test, aes(sum_RNA_exp_Induced_1, sum_RNA_exp_Induced_2), color = "firebrick", size = 3, alpha = 0.5) +
+    theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20), 
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+# NORMALIZED UNINDUCED
+c1b <- ggplot(induce_combo, aes(x = sum_RNA_exp_UnInduced_1, y = sum_RNA_exp_UnInduced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_UI, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pcombo Uninduced') +
+  geom_point(data=test, aes(sum_RNA_exp_UnInduced_1, sum_RNA_exp_UnInduced_2), color = "firebrick", size = 3, alpha = 0.5) +
+    theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# DISTAL
+corr_I <- cor(induce_distal$sum_RNA_exp_Induced_1, induce_distal$sum_RNA_exp_Induced_2) #Pearson correlation
+corr_UI <- cor(induce_distal$sum_RNA_exp_UnInduced_1, induce_distal$sum_RNA_exp_UnInduced_2) #Pearson correlation
+# NORMALIZED INDUCED
+c2a <- ggplot(induce_distal, aes(x = sum_RNA_exp_Induced_1, y = sum_RNA_exp_Induced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_I, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pspacer Induced') +
+  geom_point(data=test, aes(sum_RNA_exp_Induced_1, sum_RNA_exp_Induced_2), color = "firebrick", size = 3, alpha = 0.5) +
+  theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20), 
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+# NORMALIZED UNINDUCED
+c2b <- ggplot(induce_distal, aes(x = sum_RNA_exp_UnInduced_1, y = sum_RNA_exp_UnInduced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_UI, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pspacer Uninduced') +
+  geom_point(data=test, aes(sum_RNA_exp_UnInduced_1, sum_RNA_exp_UnInduced_2), color = "firebrick", size = 3, alpha = 0.5) +
+  theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# MULTIPLE
+corr_I <- cor(induce_multiple$sum_RNA_exp_Induced_1, induce_multiple$sum_RNA_exp_Induced_2) #Pearson correlation
+corr_UI <- cor(induce_multiple$sum_RNA_exp_UnInduced_1, induce_multiple$sum_RNA_exp_UnInduced_2) #Pearson correlation
+# NORMALIZED INDUCED
+c3a <- ggplot(induce_multiple, aes(x = sum_RNA_exp_Induced_1, y = sum_RNA_exp_Induced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_I, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pmultiple Induced') +
+  geom_point(data=test, aes(sum_RNA_exp_Induced_1, sum_RNA_exp_Induced_2), color = "firebrick", size = 3, alpha = 0.5) +
+  theme(plot.title = element_text(size = 20),
+      axis.title.x.bottom = element_text(size = 20),
+      axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+# NORMALIZED UNINDUCED
+c3b <- ggplot(induce_multiple, aes(x = sum_RNA_exp_UnInduced_1, y = sum_RNA_exp_UnInduced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 10, label = paste('italic(r)==', signif(corr_UI, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Pmultiple Uninduced') +
+  geom_point(data=test, aes(sum_RNA_exp_UnInduced_1, sum_RNA_exp_UnInduced_2), color = "firebrick", size = 3, alpha = 0.5) +
+  theme(plot.title = element_text(size = 20),
+      axis.title.x.bottom = element_text(size = 20),
+      axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+# STERIC
+corr_I <- cor(induce_steric$sum_RNA_exp_Induced_1, induce_steric$sum_RNA_exp_Induced_2) #Pearson correlation
+corr_UI <- cor(induce_steric$sum_RNA_exp_UnInduced_1, induce_steric$sum_RNA_exp_UnInduced_2) #Pearson correlation
+
+# NORMALIZED INDUCED
+c4a <- ggplot(induce_steric, aes(x = sum_RNA_exp_Induced_1, y = sum_RNA_exp_Induced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 4, label = paste('italic(r)==', signif(corr_I, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Psteric Induced') +
+  geom_point(data=test, aes(sum_RNA_exp_Induced_1, sum_RNA_exp_Induced_2), color = "firebrick", size = 3, alpha = 0.5) +
+    theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+# NORMALIZED UNINDUCED
+c4b <- ggplot(induce_steric, aes(x = sum_RNA_exp_UnInduced_1, y = sum_RNA_exp_UnInduced_2)) + geom_point(alpha = .5, size = 3) +
+  geom_smooth(method=lm, color = '#553C8B', se = FALSE) + annotate("text", x =.1, y = 4, label = paste('italic(r)==', signif(corr_UI, 3)),   parse = T, size = 8) + 
+  annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + 
+  xlab('Biological Replicate #1') + ylab('Biological Replicate #2') + labs(title = 'Psteric Uninduced') +
+  geom_point(data=test, aes(sum_RNA_exp_UnInduced_1, sum_RNA_exp_UnInduced_2), color = "firebrick", size = 3, alpha = 0.5) +
+  theme(plot.title = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 20),
+        axis.title.y.left = element_text(size = 20),
+        axis.text.x = element_text(size = 16), 
+        axis.text.y = element_text(size = 16))
+
+
+combo <- plot_grid(h1, c1a, c1b, ncol=3)
+distal <- plot_grid(h2, c2a, c2b, ncol=3)
+multiple <- plot_grid(h3, c3a, c3b, ncol=3)
+steric <- plot_grid(h4, c4a, c4b, ncol=3)
+plot_grid(combo,multiple,distal,steric,ncol=1,labels='AUTO')
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS3.png', height = 16, width = 17)
+rm(h1, c1a, c1b, h3, c3a, c3b, h2, c2a, c2b, h4, c4a, c4b)
+```
+
+```{r}
+# Figure S4: Pcombo supplements
+A <- induce_combo %>%
+  filter(Proximal == 'lacOsym', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  gather(Type, Expression, 'normalized_RNA_exp_Induced_12':'normalized_RNA_exp_UnInduced_12') %>%
+  ggplot(aes(x = Distal, y = Expression)) + geom_line(color = 'black', size =1, alpha = 1) + geom_point(aes(fill = Type), pch = 21, color = 'black', size = 8, alpha = 1) +
+  scale_fill_viridis(discrete = TRUE, direction = -1, name = 'Condition', labels = c("Induced Expression", "Uninduced Expression")) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 21))
+
+
+a1 <- ggplot(filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35_31A_32C'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio)), color = 'black', alpha = 0.9, size = 0.25) + 
+  scale_fill_viridis(name = expression('log'[2]~'(Fold-change)')) +
+  labs(x = 'Proximal', y = 'Distal', title = 'Consensus -10 & Mutated -35 (31A,32C)', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24))
+
+a2 <-ggplot(filter(induce_combo, Min_10 == 'minus10_12G', Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio)), color = 'black', alpha = 0.9, size = 0.25) + 
+  scale_fill_viridis(name = expression('log'[2]~'(Fold-change)')) +
+  labs(x = 'Proximal', y = 'Distal', title = 'Mutated -10 (12G) & Consensus -35', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym"))  + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24))
+
+B <- plot_grid(a1, a2)
+rm(a1,a2)
+
+plot_grid(A,B, labels='AUTO', ncol = 1)
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS4.pdf', height = 12, width = 16)
+```
+
+```{r}
+# Figure S6: Pmultiple supplement - Induced/Uninduced comparison with Pcombo heatmap
+temp <- induce_combo
+colnames(temp)[colnames(temp) == "Distal"] <- "Distal_right"
+combo_multiple_comp <- left_join(temp, induce_multiple, by = c("Distal_right", 'Min_10', "Min_35", "Proximal"))
+combo_multiple_comp <- combo_multiple_comp[complete.cases(combo_multiple_comp), ] %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') # remove NA ones
+
+combo_multiple_comp$Distal_right[combo_multiple_comp$Distal_right == "lacO2"] <- "lacO2-var"
+combo_multiple_comp$Distal_left[combo_multiple_comp$Distal_left == "lacO2"] <- "lacO2-var"
+combo_multiple_comp$Proximal[combo_multiple_comp$Proximal == "lacO2"] <- "lacO2-var"
+
+induce_multiple$Distal_right[induce_multiple$Distal_right == "lacO2"] <- "lacO2-var"
+induce_multiple$Distal_left[induce_multiple$Distal_left == "lacO2"] <- "lacO2-var"
+induce_multiple$Proximal[induce_multiple$Proximal == "lacO2"] <- "lacO2-var"
+
+# A ====================================
+uninduced_O1 <- combo_multiple_comp %>% 
+  filter(Proximal == 'lacO1') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(normalized_RNA_exp_UnInduced_12.y/normalized_RNA_exp_UnInduced_12.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), alpha = 1, color = 'black', size = 0.4) + 
+  scale_fill_viridis(name = 'Change in \nUninduced Expression \n(0 mM IPTG)', na.value = 'gray20', limits = c(0.12, 3.15)) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal O1', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+uninduced_Osym <- combo_multiple_comp %>% 
+  filter(Proximal == 'lacOsym') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(normalized_RNA_exp_UnInduced_12.y/normalized_RNA_exp_UnInduced_12.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), alpha = 1, color = 'black', size = 0.4) + 
+  scale_fill_viridis(name = 'Change in \nUninduced Expression \n(0 mM IPTG)', na.value = 'gray20', limits = c(0.12, 3.15)) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal Osym', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+A <- plot_grid(uninduced_O1, uninduced_Osym)
+# B ====================================
+induced_O1 <- combo_multiple_comp %>% 
+  filter(Proximal == 'lacO1') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(normalized_RNA_exp_Induced_12.y/normalized_RNA_exp_Induced_12.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), alpha = 1, color = 'black', size = 0.4) + 
+  scale_fill_viridis(name = 'Change in \nInduced Expression    \n(1 mM IPTG)', na.value = 'gray20', limits = c(0.14, 2.66)) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal O1', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+induced_Osym <- combo_multiple_comp %>% 
+  filter(Proximal == 'lacOsym') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(normalized_RNA_exp_Induced_12.y/normalized_RNA_exp_Induced_12.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), alpha = 1, color = 'black', size = 0.4) + 
+  scale_fill_viridis(name = 'Change in \nInduced Expression    \n(1mM IPTG)', na.value = 'gray20', limits = c(0.14, 2.66)) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal Osym', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+B <- plot_grid(induced_O1, induced_Osym)
+# C ====================================
+FC1 <- induce_multiple %>% 
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  filter(Proximal == 'lacOsym') %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = ratio), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(option = 'viridis', limits = c(2.1, 16.7), name = 'Fold-change               ') +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal Osym', size = 20) +
+geom_text(aes(label=signif(ratio, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+
+FC2 <- induce_multiple %>% 
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  filter(Proximal == 'lacO1') %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = ratio), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(option = 'viridis', limits = c(2.1, 16.7), name = 'Fold-change               ') +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2-var', 'lacO1', 'lacOsym')) + labs(x = 'Distal Site', y = 'Distal+ Site', title = 'Proximal O1', size = 20) +
+geom_text(aes(label=signif(ratio, 3)), size=5) +
+  theme(panel.background = element_rect(fill = "gray40"),
+        plot.title = element_text(size = 24),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 21),
+        axis.title.y.left = element_text(size = 21))
+C <- plot_grid(FC2, FC1)
+
+plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20, rel_widths = c(1, 1))
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS6.pdf', width = 15.5, height = 15)
+```
+
+```{r}
+# Figure S7: Pspacer Supp
+#distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>% dplyr::select(Offset, ratio)
+#distal_comp <- left_join(induce_distal, distal_scram_exp, by = 'Offset') %>%
+  #filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons')
+  #dplyr::mutate(norm_ratio = ratio.x/ratio.y) %>%
+  #dplyr::select(Library, Core, Distal, Offset, norm_ratio) %>%
+  #unique(.)
+
+#distal_comp <- distal_comp[!is.na(distal_comp$norm_ratio),]
+#distal_comp$Distal <- factor(distal_comp$Distal, levels = c('lacOscram','lacO3','lacO2','lacO1','lacOsym'))
+#distal_comp[,'Distal'] <- sapply(distal_comp[,'Distal'],as.character) 
+
+#distal_comp <- distal_comp %>%
+#  mutate(realOffset = as.numeric(Offset) + 26) 
+#distal_comp$Core[distal_comp$Core == "lacO2"] <- "lacO2-var"
+#distal_comp$Distal[distal_comp$Distal == "lacO2"] <- "lacO2-var"
+
+induce_distal <- induce_distal %>%
+  mutate(realOffset = as.numeric(Offset) + 26) 
+induce_distal$Core[induce_distal$Core == "lacO2"] <- "lacO2-var"
+induce_distal[,'Distal'] <- sapply(induce_distal[,'Distal'],as.character) 
+induce_distal$Distal[induce_distal$Distal == "lacO2"] <- "lacO2-var"
+induce_distal$Distal <- factor(induce_distal$Distal, levels = c('lacOscram','lacO3','lacO2-var','lacO1','lacOsym'))
+
+A <- induce_distal %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  ggplot(aes(y = log2(ratio), fill = Distal, x = Core)) + 
+  geom_bar(position = "dodge", stat = 'identity', color = 'black') + 
+  scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2-var', 'lacO1', 'lacOsym')) +
+  scale_fill_viridis(discrete = TRUE, name = 'Distal site', alpha = 0.9) +
+   labs(x = 'Core site', y = expression('log'[2]~'(Fold-change)')) + geom_hline(yintercept=0, color = 'black', size = 0.5) + geom_hline(yintercept=2, linetype = 'dashed', color = 'red', size = 0.5) + geom_hline(yintercept=4, linetype = 'dashed', color = 'red', size = 0.5) +   
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 18),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 20),
+        legend.title = element_text(size = 22),
+        legend.text = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24)) +
+  facet_wrap(~realOffset, scales = 'fixed')
+
+induce_distal$Min_10  <- with(induce_distal, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
+induce_distal$Min_35 <- with(induce_distal, reorder(Min_35, normalized_RNA_exp_Induced_12, median))
+
+B <- induce_distal %>%
+  filter(Offset == 22) %>%
+  group_by(Min_10,Min_35) %>%
+  mutate(avgInd = mean(normalized_RNA_exp_Induced_12)) %>%
+  select(Min_10, Min_35, avgInd) %>%
+  distinct() %>%
+ggplot(aes(x = Min_10, y = Min_35)) +
+  geom_tile(aes(fill = log2(avgInd)), alpha = 1, size = 0.5, color = 'gray20') + 
+  scale_fill_viridis(name = 'Mean Induced Expression \n(1 mM IPTG)') +
+  geom_text(aes(label=signif(avgInd, 3)), size=10) +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.text = element_text(size = 16)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24)) +
+  labs(x = '-10 Element', y = '-35 Element')
+
+plot_grid(A,B, ncol = 1, labels = 'AUTO', label_size = 20) 
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS7.pdf', width = 13, height = 16)
+  
+
+```
+
+```{r}
+# Psteric supplement - Although weak, if any, transcription was detected from promoters with only a -10, we found that relatively strong promoters could be created by the addition of an UP-element and extended -10 
+up_326x_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'up_326x_ext_10') 
+up_326x_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'up_326x_ext_UV5')
+no_up_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'no_up_ext_10')
+no_up_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'no_up_ext_UV5')
+temp1 <- rbind(up_326x_ext_10, up_326x_ext_UV5)
+temp2 <- rbind(temp1, no_up_ext_10)
+steric_box <- rbind(temp2, no_up_ext_UV5)
+rm(temp1, temp2, up_326x_ext_10, up_326x_ext_UV5, no_up_ext_10, no_up_ext_UV5)
+#pal4 <- brewer.pal(n=4, name ='RdBu')
+
+A <- steric_box %>%
+  filter(Proximal == 'lacOscram', Core == 'lacOscram') %>%
+  ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_UnInduced_12, x = category)) +
+  geom_bar(position = 'dodge', stat = 'identity', alpha = 0.9, color = 'black') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +  
+  scale_fill_viridis(discrete = TRUE, name = '-10 Element') +
+  labs(y = 'Uninduced expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + 
+    theme(axis.text = element_text(size = 20),
+         axis.text.x = element_text(size = 16),
+         axis.title = element_text(size = 20),
+         legend.title = element_text(size = 18),
+         legend.text = element_text(size = 16),
+         legend.position = c(0.05, 0.75))
+
+# Figure S8: Psteric Supp
+B <- induce_steric %>%
+  mutate(ProximalPos = ifelse(Loop_Distance == '55', '+30', '+11')) %>%
+  ggplot(aes(x=ProximalPos, y=ratio)) +
+  geom_jitter(aes(fill = ProximalPos), pch=21, color='black',alpha=1, size=3, width = 0.3) +
+  geom_boxplot(outlier.shape=NA, fill = NA) + 
+  scale_fill_manual(values=c("darkslateblue", "#de6fa1")) +
+  labs(y = 'Fold-change', x = 'Proximal site position') +
+  theme(axis.text.x = element_text(size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 22),
+        axis.title.y.left = element_text(size = 22),
+        legend.position = "none")
+
+C <- induce_steric %>%
+  filter(UP == 'up_326x' | UP == 'up_136x') %>%
+  filter(Loop_Distance == 55) %>%
+  filter(Extended_Min_10 == 'ext_min10') %>%
+  filter(Min_10 == 'minus10cons') %>%
+  ggplot(aes(x=Core, y=normalized_RNA_exp_Induced_12)) + 
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color = Core), alpha = 0.75, size = 3) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) +
+  scale_color_viridis(discrete = TRUE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  labs(x = 'Core Operator Site', y = 'Induced Expression') +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 22),
+        axis.title.y.left = element_text(size = 22),
+        legend.position = 'none')
+
+#table_var <- induce_steric %>%
+#  filter(UP == 'up_326x', Min_10 == 'minus10cons', Extended_Min_10 == 'ext_min10', Loop_Distance == 55, Proximal == 'lacO1') %>%
+#  select(name, variant, normalized_RNA_exp_Induced_12)
+#write.table(table_var, '~/Desktop/InducibleArchitectures/processed_data/Psteric_suppTable.txt')
+plot_grid(A,B,C,labels='AUTO', ncol = 3, label_size = 20)
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS8.pdf', width = 18, height = 7)
+
+```
+
+```{r}
+# Plate reader supplement with titration profiles of selected promoters
+titration <- read.table("~/Desktop/InducibleArchitectures/raw_data/titration.txt", header = T, fill = TRUE)
+
+# COMBO
+uninduced <- titration %>% filter(Concentration == '1e-04') %>% mutate(background = 514.76*OD + 40.378) %>%
+    mutate(normalized_GFP = GFP - background) %>%
+    mutate(GFP.OD = normalized_GFP/OD) %>%
+    filter(GFP.OD > 0) %>%
+    group_by(Architecture, Concentration) %>%
+    mutate(avg_GFP.OD = mean(GFP.OD)) %>%
+    ungroup() %>%
+    select(Architecture, avg_GFP.OD) %>% distinct()
+UV5_unind <- filter(uninduced, Architecture == 'UV5')$avg_GFP.OD  
+N_unind <- filter(uninduced, Architecture == 'N')$avg_GFP.OD  
+
+C1_unind <- filter(uninduced, Architecture == 'C1')$avg_GFP.OD  
+C2_unind <- filter(uninduced, Architecture == 'C2')$avg_GFP.OD  
+tit1 <-titration %>% 
+    filter(Concentration != '1e-04') %>%
+    filter(Architecture == 'C1' | Architecture == 'C2' | Architecture == 'UV5' | Architecture == 'N') %>%
+    mutate(background = 514.76*OD + 40.378) %>%
+    mutate(normalized_GFP = GFP - background) %>%
+    mutate(GFP.OD = normalized_GFP/OD) %>%
+    filter(GFP.OD > 0) %>%
+    group_by(Architecture, Concentration) %>%
+    mutate(avg_GFP.OD = mean(GFP.OD)) %>%
+    mutate(FC = ifelse(Architecture == 'C1', avg_GFP.OD/C1_unind, 
+                ifelse(Architecture == 'C2', avg_GFP.OD/C2_unind,
+                ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
+    mutate(SEM = sd(FC)/sqrt(n())) %>%
+    ungroup() %>%
+    ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
+    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+    geom_point(size = 3, alpha = 0.75) +
+  geom_line() + 
+  scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pcombo 1', 'Pcombo 2', 'Constitutive', 'lacUV5')) +
+  scale_color_manual(values = c("#75af4f", "#bbd7a6", "black", "grey50"), labels= c('Pcombo 1', 'Pcombo 2', 'Constitutive', 'lacUV5')) +
+  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
+  theme(axis.text = element_text(size = 16),
+         axis.title = element_text(size = 20),
+         legend.text = element_text(size = 15))
+
+# MULTIPLE
+M1_unind <- filter(uninduced, Architecture == 'M1')$avg_GFP.OD  
+M2_unind <- filter(uninduced, Architecture == 'M2')$avg_GFP.OD  
+tit2 <- titration %>% 
+    filter(Concentration != '1e-04') %>%
+    filter(Architecture == 'M1' | Architecture == 'M2' | Architecture == 'UV5' | Architecture == 'N') %>%
+    mutate(background = 514.76*OD + 40.378) %>%
+    mutate(normalized_GFP = GFP - background) %>%
+    mutate(GFP.OD = normalized_GFP/OD) %>%
+    filter(GFP.OD > 0) %>%
+  group_by(Architecture, Concentration) %>%
+    mutate(avg_GFP.OD = mean(GFP.OD)) %>%
+    mutate(FC = ifelse(Architecture == 'M1', avg_GFP.OD/M1_unind, 
+                ifelse(Architecture == 'M2', avg_GFP.OD/M2_unind,
+                ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
+    mutate(SEM = sd(FC)/sqrt(n())) %>%
+  ungroup() %>%
+  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
+    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+geom_point(size = 3, alpha = 0.75) + geom_line() +
+  scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pmultiple 1', 'Pmultiple 2', 'Constitutive', 'lacUV5')) +
+  scale_color_manual(values = c("#e39225", "#ECB469", "black", "grey50"), labels= c('Pmultiple 1', 'Pmultiple 2', 'Constitutive', 'lacUV5')) +
+  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 16),
+         axis.title = element_text(size = 20),
+         legend.text = element_text(size = 15))
+
+# DISTAL
+D1_unind <- filter(uninduced, Architecture == 'D1')$avg_GFP.OD  
+D2_unind <- filter(uninduced, Architecture == 'D2')$avg_GFP.OD  
+tit3 <- titration %>% 
+    filter(Concentration != '1e-04') %>%
+    filter(Architecture == 'D1' | Architecture == 'D2' | Architecture == 'UV5' | Architecture == 'N') %>%
+    mutate(background = 514.76*OD + 40.378) %>%
+    mutate(normalized_GFP = GFP - background) %>%
+    mutate(GFP.OD = normalized_GFP/OD) %>%
+    filter(GFP.OD > 0) %>%
+  group_by(Architecture, Concentration) %>%
+    mutate(avg_GFP.OD = mean(GFP.OD)) %>%
+    mutate(FC = ifelse(Architecture == 'D1', avg_GFP.OD/D1_unind, 
+                ifelse(Architecture == 'D2', avg_GFP.OD/D2_unind,
+                ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
+    mutate(SEM = sd(FC)/sqrt(n())) %>%
+  ungroup() %>%
+  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
+  geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+geom_point(size = 3, alpha = 0.75) + geom_line() +
+    scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pspacer 1', 'Pspacer 2', 'Constitutive', 'lacUV5')) +
+  scale_color_manual(values = c("#3b9bb3", "#c2e0e7", "black", "grey50"), labels= c('Pspacer 1', 'Pspacer 2', 'Constitutive', 'lacUV5')) +
+  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 16),
+         axis.title = element_text(size = 20),
+         legend.text = element_text(size = 15))
+
+# STERIC
+S1_unind <- filter(uninduced, Architecture == 'S1')$avg_GFP.OD  
+S2_unind <- filter(uninduced, Architecture == 'S2')$avg_GFP.OD  
+tit4 <- titration %>% 
+    filter(Concentration != '1e-04') %>%
+    filter(Architecture == 'S1' | Architecture == 'S2' | Architecture == 'UV5' | Architecture == 'N') %>%
+    mutate(background = 514.76*OD + 40.378) %>%
+    mutate(normalized_GFP = GFP - background) %>%
+    mutate(GFP.OD = normalized_GFP/OD) %>%
+    filter(GFP.OD > 0) %>%
+  group_by(Architecture, Concentration) %>%
+  mutate(avg_GFP.OD = mean(GFP.OD)) %>%
+  mutate(FC = ifelse(Architecture == 'S1', avg_GFP.OD/S1_unind, 
+                ifelse(Architecture == 'S2', avg_GFP.OD/S2_unind,
+                ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
+  mutate(SEM = sd(FC)/sqrt(n())) %>%
+  ungroup() %>%
+  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
+    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') + geom_point(size = 3, alpha = 0.75) + geom_line() +
+  scale_linetype_manual(values = c("dashed", "solid", "solid", "solid"), labels= c('Constitutive', 'Psteric 1', 'Psteric 2', 'lacUV5')) +
+  scale_color_manual(values = c("black", "#c13b41", "#f3bfbb", "grey50"), labels= c('Constitutive', 'Psteric 1', 'Psteric 2', 'lacUV5')) +
+  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 16),
+         axis.title = element_text(size = 20),
+         legend.text = element_text(size = 15))
+
+plot_grid(tit1, tit2, tit3, tit4, ncol = 2)
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS9.pdf', height = 6, width = 9)
+```
+
+
+
+
+
+```{r}
+# Figure S10: Correlations between RNAseq and Flow
+comp <- read.table('~/Desktop/newFlowComparison.txt', header = TRUE)
+options(digits=3)
+
+pearsonFC <- cor(comp$RNAseq_FC, comp$Flow_FC, method = "pearson")
+pearsonI <- cor(comp$RNAseq_Induced, comp$Flow_Induced, method = "pearson")
+pearsonUI <- cor(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = "pearson")
+
+spearFC <- cor(comp$RNAseq_FC, comp$Flow_FC, method = c("spearman"))
+spearI <- cor(comp$RNAseq_Induced, comp$Flow_Induced, method = c("spearman"))
+spearUI <- cor(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = c("spearman"))
+
+# FC
+cor.test(comp$RNAseq_FC, comp$Flow_FC, method = "pearson")$estimate # 0.885
+cor.test(comp$RNAseq_FC, comp$Flow_FC, method = "pearson")$p.value # 0.00153
+
+# Induced
+cor.test(comp$RNAseq_Induced, comp$Flow_Induced, method = "pearson")$estimate # 0.701
+cor.test(comp$RNAseq_Induced, comp$Flow_Induced, method = "pearson")$p.value # 0.0352
+
+# Uninduced
+cor.test(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = "pearson")$estimate # 0.981
+cor.test(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = "pearson")$p.value # 3.34e-06
+
+# FC
+cor.test(comp$RNAseq_FC, comp$Flow_FC, method = "spearman")$estimate # 0.533
+cor.test(comp$RNAseq_FC, comp$Flow_FC, method = "spearman")$p.value # 0.148
+
+# Induced
+cor.test(comp$RNAseq_Induced, comp$Flow_Induced, method = "spearman")$estimate # 0.6
+cor.test(comp$RNAseq_Induced, comp$Flow_Induced, method = "spearman")$p.value # 0.0968
+
+# Uninduced
+cor.test(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = "spearman")$estimate # 0.65
+cor.test(comp$RNAseq_Uninduced, comp$Flow_Uninduced, method = "spearman")$p.value # 0.0666
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+library_comp <- comp %>%
+  mutate(Library = ifelse(grepl('Constitutive', comp$Name), 'Constitutive',
+                   ifelse(grepl('D', comp$Name), 'D',
+                   ifelse(grepl('M', comp$Name), 'M',
+                   ifelse(grepl('S', comp$Name), 'S', 'C')))))
+
+library_comp$Library <- factor(library_comp$Library, levels = c("C", "D", "M", "S", "Constitutive"))
+f <- library_comp %>%
+  ggplot(aes(x = RNAseq_FC, y = Flow_FC)) + geom_smooth(method=lm, color = 'black', se = TRUE) +
+  geom_point(aes(color=Library), size = 5) +
+  scale_color_manual(values = c('#76af51', '#3b9bb3', '#e39225', '#c13a41', 'black')) +
+  labs(x = 'RNA-seq Fold-change', y = 'Flow Cytometry Fold-change') +
+  annotate("text", x =3, y = 22, label = paste('r==', pearsonFC),   parse = T, size = 5) +
+  annotate("text", x =3, y = 19, label = paste('rho==', spearFC),   parse = T, size = 5) +
+    theme(axis.text.x = element_text(size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 16),
+        axis.title.y.left = element_text(size = 16))
+
+a <- library_comp %>%
+  ggplot(aes(x = RNAseq_Induced, y = Flow_Induced)) + geom_smooth(method=lm, color = 'black', se = TRUE) +
+  geom_point(aes(color=Library), size = 5) +
+  scale_color_manual(values = c('#76af51', '#3b9bb3', '#e39225', '#c13a41', 'black')) +
+  labs(x = 'RNA-seq Induced Expression', y = 'Flow Cytometry Induced Expression') +
+  annotate("text", x =10, y = 950, label = paste('r==', pearsonI),   parse = T, size = 5) +
+  annotate("text", x =10, y = 850, label = paste('rho==', spearI),   parse = T, size = 5) +
+      theme(axis.text.x = element_text(size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 16),
+        axis.title.y.left = element_text(size = 16))
+
+  
+b <- library_comp %>%
+  ggplot(aes(x = RNAseq_Uninduced, y = Flow_Uninduced)) + geom_smooth(method=lm, color = 'black', se = TRUE) +
+  geom_point(aes(color=Library), size = 5) +
+  scale_color_manual(values = c('#76af51', '#3b9bb3', '#e39225', '#c13a41', 'black')) +
+  labs(x = 'RNA-seq Uninduced Expression', y = 'Flow Cytometry Uninduced Expression') +
+  annotate("text", x =3, y = 640, label = paste('r==', pearsonUI),   parse = T, size = 5) +
+  annotate("text", x =3, y = 540, label = paste('rho==', spearUI),   parse = T, size = 5) +
+      theme(axis.text.x = element_text(size = 20), 
+        axis.text.y = element_text(size = 20),
+        axis.title.x.bottom = element_text(size = 16),
+        axis.title.y.left = element_text(size = 16))
+
+plot_grid(f,a,b, ncol=3, labels = 'AUTO')
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS10.pdf', height = 5, width = 18)
+```
+
+```{r}
+induce_multiple %>% 
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Distal_right, Distal_left) %>%
+  mutate(avgFC = mean(ratio)) %>%
+  select(Distal_right, Distal_left, Proximal, avgFC) %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = avgFC), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  #scale_fill_distiller(palette = 'PuRd', na.value = 'gray20', name = 'Change in Fold-change') +
+  scale_fill_viridis(option = 'viridis') +
+  #scale_fill_gradient2(low = "yellow", mid = "black", high = "purple", midpoint = 0) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Canonical Distal', y = 'Additional Distal', size = 20) +
+geom_text(aes(label=signif(avgFC, 3)), size=5) +
+  theme(axis.text = element_text(size = 20),
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 20))
+
+
+
+
+```
+
+
+```{r}
+nrow(induce_combo) 
+nrow(induce_distal)  
+nrow(induce_multiple)
+nrow(induce_steric)
+```
+
+```{r}
+induce_steric %>%
+  filter(Min_10 == 'minus10cons') %>%
+  ggplot(aes(x = UP, y = normalized_RNA_exp_Induced_12)) + geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(color = UP), size = 2.5, alpha = 0.6) +
+  scale_color_viridis(discrete = TRUE) +
+  scale_x_discrete(limits = c('no_up', 'up_69x', 'up_136x', 'up_326x'))
+```
+
+```{r}
+induce_multiple %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  ggplot(aes(x = Proximal, y = ratio)) + geom_bar(aes(fill = Proximal), position = 'dodge', stat = 'identity', alpha = 1, color = 'black') + scale_fill_viridis(discrete = TRUE) + scale_x_discrete(limits = c("lacOscram", "lacO2", "lacO3", "lacO1", "lacOsym")) + facet_wrap(~Distal_left+Distal_right, scales = 'fixed')
+
+
+
+induce_multiple$Distal_right = factor(induce_multiple$Distal_right, levels=c('lacOscram','lacO2','lacO3','lacO1', 'lacOsym'))
+induce_multiple$Distal_left = factor(induce_multiple$Distal_left, levels=c('lacOsym','lacO1','lacO3','lacO2', 'lacOscram'))
+induce_multiple$Proximal = factor(induce_multiple$Proximal, levels=c('lacOscram','lacO3','lacO2','lacO1', 'lacOsym'))
+
+induce_multiple %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  ggplot(aes(x = Proximal, y = ratio)) + 
+  geom_bar(aes(fill = Proximal), position = 'dodge', stat = 'identity', alpha = 1, color = 'black') +
+  #geom_tile(aes(fill = ratio), alpha = 1, size = 0.5, color = 'gray20') + 
+  scale_x_discrete(limits = c("lacOscram", "lacO2", "lacO3", "lacO1", "lacOsym")) +
+  scale_fill_viridis(discrete = TRUE) +
+  facet_grid(Distal_left ~ Distal_right)
+  
+  
+  
+  theme(panel.background = element_rect(fill = "gray40"), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.text.x = element_blank(), 
+        strip.text = element_blank(),
+        panel.spacing = unit(0.10, "lines"))
+
+
+
+```
+
+
+
+
+
+
+
+
+
+

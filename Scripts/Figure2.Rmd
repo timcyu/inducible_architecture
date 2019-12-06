@@ -1,0 +1,155 @@
+---
+title: "Figure2"
+output: html_document
+---
+
+```{r}
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library(viridis)
+require(cowplot)
+require(forcats)
+library(ggsignif)
+```
+
+```{r}
+# read in master data frame
+induce_exp <- read.table("~/Desktop/InducibleArchitectures/processed_data/induce_exp(updated).txt", header = T)
+
+# split reg elements apart
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+```
+
+```{r}
+# Figure 2B: Big tile plot of fold-change
+induce_combo$Min_10  <- with(induce_combo, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, -normalized_RNA_exp_Induced_12, median))
+
+ggplot(induce_combo, aes(x = Proximal, y = Distal)) + 
+  geom_tile(aes(fill = log2(ratio)), alpha = 1, size = 0.5, color = 'gray20') + 
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_fill_viridis(limits = c(-2.2, 3.17)) +
+  facet_grid(Min_35 ~ Min_10) +
+  theme(panel.background = element_rect(fill = "gray40"), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.text.x = element_blank(), 
+        strip.text = element_blank(),
+        panel.spacing = unit(0.10, "lines"))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Figure2B.pdf', height = 11, width = 13)
+```
+
+
+```{r}
+# Figure 2C: Tile plot of Distal x Proximal for consensus promoter, fill is Fold Change. 
+ggplot(filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio)), color = 'black', alpha = 0.9, size = 0.25) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'(Fold-change)'), limits = c(-2.2, 3.17)) +
+  labs(x = 'Proximal', y = 'Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14)) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.text = element_text(size = 15))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Figure2C.pdf', width = 10.5, height = 7)
+```
+
+```{r}
+# Figure 2D: Big tile plot of uninduced expression
+induce_combo$Min_10  <- with(induce_combo, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, -normalized_RNA_exp_Induced_12, median))
+
+ggplot(induce_combo, aes(x = Proximal, y = Distal)) + 
+  geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12)), alpha = 1, size = 0.5, color = 'gray20') + 
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_fill_viridis(name ='log2(unid)', limits = c(-1.82, 6.245)) +
+  facet_grid(Min_35 ~ Min_10) +
+  theme(panel.background = element_rect(fill = "gray40"), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.text.x = element_blank(), 
+        strip.text = element_blank(),
+        panel.spacing = unit(0.10, "lines"))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Figure2D.pdf', height = 11, width = 13)
+```
+
+
+```{r}
+# Figure 2E: Tile plot of Distal x Proximal for consensus promoter, fill is Uninduced Expression. 
+ggplot(filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12)), color = 'black', alpha = 0.9, size = 0.25) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'(Uninduced Expression)'), limits = c(-1.82, 6.245)) +
+  labs(x = 'Proximal', y = 'Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14)) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.text = element_text(size = 15))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Figure2E.pdf', width = 12, height = 7)
+```
+
+```{r}
+# Figure 2F: -35 x -10 tile plot for promoters with proximal Osym or O1. Uninduced Expression plotted.
+induce_combo$Min_10  <- with(induce_combo, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, normalized_RNA_exp_Induced_12, median))
+
+induce_combo %>% 
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(combo_ratio=mean(normalized_RNA_exp_UnInduced_12)) %>%
+  dplyr::select(Min_10, Min_35, combo_ratio) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = combo_ratio), alpha = 0.9, color = 'black', size = 0.3) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('Uninduced Expression')) +
+  labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
+   theme(axis.text = element_text(size = 20),
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 15)) +
+  geom_text(aes(label=signif(combo_ratio, 3)), size=5) + 
+  scale_y_discrete(limits = c('minus35_30C_33T', 'minus35_33T', 'minus35_31A_32C', 'minus35cons')) +
+  scale_x_discrete(limits = c('minus10_7A', 'minus10_12A', 'minus10_12G', 'minus10cons'))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Figure2F.pdf', width = 11.5, height = 7)
+```
+
+
+```{r}
+# Figure SX: -35 x -10 for promoters with proximal Osym or O1. Fold-change plotted.
+induce_combo$Min_10  <- with(induce_combo, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, normalized_RNA_exp_Induced_12, median))
+
+induce_combo %>% 
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(combo_ratio=mean(ratio)) %>%
+  dplyr::select(Min_10, Min_35, combo_ratio) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = combo_ratio), alpha = 0.9, color = 'black', size = 0.3) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('Fold-change')) +
+  labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
+   theme(axis.text = element_text(size = 20), 
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 15)) +
+  geom_text(aes(label=signif(combo_ratio, 3)), size=5)
+  #scale_y_discrete(limits = c('minus35_30C_33T', 'minus35_33T', 'minus35_31A_32C', 'minus35cons')) +
+  #scale_x_discrete(limits = c('minus10_7A', 'minus10_12A', 'minus10_12G', 'minus10cons'))
+ggsave('~/Desktop/InducibleArchitectures/Figure2/Fig_2B.pdf', width = 10, height = 7)
+```
+
+
+
+
+
+
+
+

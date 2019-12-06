@@ -1,0 +1,516 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library(viridis)
+require(cowplot)
+require(forcats)
+library(ggsignif)
+library(RColorBrewer)
+```
+
+```{r}
+induce_exp <- read.table("~/Desktop/InducibleArchitectures/processed_data/induce_exp(updated).txt", header = T)
+
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+induce_distal <- subset(induce_exp, grepl("DISTAL", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Offset", "Min_35", "Core", "Min_10"), sep = "-", remove = F)
+
+induce_distal$Min_35 <- with(induce_distal, reorder(Min_35, ratio, median))
+induce_distal$Min_10 <- with(induce_distal, reorder(Min_10, ratio, median))
+induce_distal$Core <- with(induce_distal, reorder(Core, ratio, median))
+induce_distal$Distal <- with(induce_distal, reorder(Distal, ratio, median))
+induce_distal$Core <- gsub("_core", "", induce_distal$Core)
+
+induce_steric <- subset(induce_exp, grepl("STERIC", induce_exp$name)) %>% 
+  separate(col = 'name', into = c("Library", "Loop_Distance", "UP", "Core", "Extended_Min_10", "Min_10", "Proximal"), sep = "-", remove = F)
+induce_steric$Min_10 <- with(induce_steric, reorder(Min_10, ratio, median))
+induce_steric$Core <- with(induce_steric, reorder(Core, ratio, median))
+induce_steric$Proximal <- with(induce_steric, reorder(Proximal, ratio, median))
+
+induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F) %>% mutate(induction = ratio/normalized_RNA_exp_UnInduced_12)
+```
+
+```{r}
+# color palettes
+libraries <- c('plum', '#40568f', '#EDB83D', '#D70026')
+```
+
+
+```{r}
+# FIGURE 4A: PMultiple/Pcombo comparison to show effect of additional distal site on fold-change
+colnames(induce_combo)[colnames(induce_combo) == "Distal"] <- "Distal_right"
+combo_multiple_comp <- left_join(induce_combo, induce_multiple, by = c("Distal_right", 'Min_10', "Min_35", "Proximal"))
+combo_multiple_comp <- combo_multiple_comp[complete.cases(combo_multiple_comp), ] %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') # remove NA ones
+
+
+combo_multiple_comp %>% 
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  #scale_fill_distiller(palette = 'PuRd', na.value = 'gray20', name = 'Change in Fold-change') +
+  scale_fill_viridis(option = 'viridis') +
+  #scale_fill_gradient2(low = "yellow", mid = "black", high = "purple", midpoint = 0) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Canonical Distal', y = 'Additional Distal', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(axis.text = element_text(size = 20),
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 20))
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4A.pdf', width = 10, height = 8)
+
+combo_multiple_comp %>% 
+  filter(Proximal == 'lacOscram') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  #scale_fill_distiller(palette = 'PuRd', na.value = 'gray20', name = 'Change in Fold-change') +
+  scale_fill_viridis(option = 'viridis') +
+  #scale_fill_gradient2(low = "yellow", mid = "black", high = "purple", midpoint = 0) +
+  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Canonical Distal', y = 'Additional Distal', size = 20) +
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+  theme(axis.text = element_text(size = 20),
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 20))
+```
+
+```{r}
+# FIGURE 4B: Pcombo/Pcore comparison to show significantly higher uninduced/induced expression in distal,
+# but same FC. Significance using two-sided Mann-whitney Wilcoxon test.
+#colnames(induce_combo)[colnames(induce_combo) == "Distal_right"] <- "Distal"
+temp_combo <- induce_combo %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  filter(Distal == 'lacOsym' | Distal == 'lacO1' | Distal == 'lacO2' | Distal == 'lacO3' | Distal == 'lacOscram') %>%
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOscram')
+temp_dist <- induce_distal %>%
+    filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+    filter(Offset == 29)
+
+test <- bind_rows(temp_combo, temp_dist)
+test <- test %>%
+  mutate(Prox.Core = coalesce(Proximal, Core)) %>%
+  select(name, Library, Distal, Min_35, Min_10, Prox.Core, normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12) %>%
+  gather(Condition, Expression, 'normalized_RNA_exp_UnInduced_12':'normalized_RNA_exp_Induced_12') %>%
+  mutate(Sym = ifelse(Prox.Core == 'lacOsym', 'Yes', 'No'))
+
+test$Condition <- factor(test$Condition)
+levels(test$Condition) <- c('Induced', 'UnInduced')
+test <- arrange(transform(test, Condition=factor(Condition,levels=c('UnInduced', 'Induced'))),Condition)
+
+test %>%
+  ggplot(aes(x=Library, y=log2(Expression))) +
+  geom_boxplot(outlier.shape=NA, aes(fill = Library), alpha = 0.4) +
+  geom_jitter(aes(fill = Library), size = 2, alpha = 1, pch = 21, color = 'black') +
+  geom_signif(comparisons = list(c("COMBO", "DISTAL")), 
+              y_position= 8.3, map_signif_level= function(p)sprintf("p = %.2g", p), test="wilcox.test") +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3')) +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3')) +
+  labs(x = 'Library', y = expression('log'[2]~'(Expression)')) +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24)) +
+  facet_wrap(~Condition, scales = 'fixed') 
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B1(new).pdf', height = 5, width = 6)
+
+test %>%
+  ggplot(aes(x=Library, y=log2(Expression))) +
+  geom_boxplot(outlier.shape=NA, alpha = 0.4) +
+  geom_jitter(aes(fill = Sym), size = 2.5, alpha = 0.8, pch = 21, color = 'black') +
+  geom_signif(comparisons = list(c("COMBO", "DISTAL")), 
+              y_position= 8.3, map_signif_level= function(p)sprintf("p = %.2g", p), test="wilcox.test") +
+  #scale_color_manual(values = c('#75af4f', '#3b9bb3')) +
+  #scale_fill_manual(values = c('#75af4f', '#3b9bb3')) +
+  scale_fill_manual(values = c('grey40', 'red')) +
+  labs(x = 'Library', y = expression('log'[2]~'(Expression)')) +
+  theme(#legend.position = 'none',
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24)) +
+  facet_wrap(~Condition, scales = 'fixed') 
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B(Osym).pdf', height = 5, width = 6)
+
+# Fold changes
+fc <- bind_rows(temp_combo, temp_dist) 
+fc <- fc %>%
+   mutate(Prox.Core = coalesce(Proximal, Core)) %>%
+   select(Library, Prox.Core, Distal, Min_10, Min_35, ratio)
+ggplot(fc, aes(x = Library, y = log2(ratio))) +
+  geom_boxplot(outlier.shape = NA, aes(fill = Library), alpha = 0.4) +
+  geom_jitter(aes(fill = Library), size = 2, alpha = 1, pch = 21, color = 'black') +
+  geom_signif(comparisons = list(c("COMBO", "DISTAL")), 
+              y_position= 4.5, map_signif_level= function(p)sprintf("p = %.2g", p), test="wilcox.test") +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3')) +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3')) +
+  labs(x = 'Library', y = expression('log'[2]~'(Fold-change)')) +
+  theme(legend.position = 'none', 
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24))
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B2(new).pdf', height = 5, width = 3.5)
+```
+
+```{r}
+min10s <- c('#444C5C', '#78A5A3', '#E1B16A', '#CE5A57')
+# Figure 4C: How to build a good PSteric promoter
+up_326x_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'up_326x_ext_10') 
+up_326x_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'up_326x_ext_UV5')
+no_up_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'no_up_ext_10')
+no_up_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'no_up_ext_UV5')
+temp1 <- rbind(up_326x_ext_10, up_326x_ext_UV5)
+temp2 <- rbind(temp1, no_up_ext_10)
+steric_box <- rbind(temp2, no_up_ext_UV5)
+rm(temp1, temp2, up_326x_ext_10, up_326x_ext_UV5, no_up_ext_10, no_up_ext_UV5)
+
+pal4 <- brewer.pal(n=4, name ='RdBu')
+
+steric_box %>%
+  filter(Proximal == 'lacO1', Core == 'lacO1') %>%
+  ggplot(., aes(fill = Min_10, y = ratio, x = category)) +
+  geom_bar(position = 'dodge', stat = 'identity', alpha = 1, color = 'black') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_viridis(discrete = TRUE) + labs(y = 'Fold-change', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + 
+    theme(axis.text = element_text(size = 20),
+         axis.title = element_text(size = 20),
+         title = element_text(size = 24),
+         legend.text = element_text(size = 15))
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4C.pdf', width = 7, height = 5)
+```
+```{r}
+neg <- induce_exp %>% filter(grepl("neg", name))
+neg_2mad_Induced <- median(neg$normalized_RNA_exp_Induced_12) + 2*mad(neg$normalized_RNA_exp_Induced_12)
+neg_2mad_Uninduced <- median(neg$normalized_RNA_exp_UnInduced_12) + 2*mad(neg$normalized_RNA_exp_UnInduced_12)
+neg_2mad_FC <-  median(neg$ratio) + 2*mad(neg$ratio)
+
+# Figure 4 Supplement: VIOLIN
+rel_ops <- c('lacOsym', 'lacO1', 'lacO2', 'lacO3', 'lacOscram')
+A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(ratio))) + 
+  geom_hline(yintercept = log2(neg_2mad_FC), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(1,2,3,4,5)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  scale_y_continuous(breaks=c(0,1,2,3,4)) +
+  labs(y = 'log2(Fold-change)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+
+B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_UnInduced_12))) + 
+  geom_hline(yintercept = log2(neg_2mad_Uninduced), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(0,2,4)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  scale_y_continuous(breaks=c(-4,-2,0,2,4,6,8)) +
+  labs(y = 'log2(Uninduced Expression)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+
+C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_Induced_12))) + 
+  geom_hline(yintercept = log2(neg_2mad_Induced), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(0,3,6,9)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  labs(y = 'log2(Induced Expression)') +
+  scale_y_continuous(breaks=c(-3, 0, 3, 6, 9)) +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+plot_grid(B,C,A, ncol = 1)
+
+numbers <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1)
+
+dim(filter(numbers, grepl("COMBO", Library)))
+dim(filter(numbers, grepl("DISTAL", Library)))
+dim(filter(numbers, grepl("STERIC", Library)))
+dim(filter(numbers, grepl("MULTIPLE", Library)))
+
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4D_v3.pdf', height = 13, width = 13)
+```
+
+
+
+
+```{r}
+#install.packages('ggbeeswarm')
+#library(ggbeeswarm)
+
+neg <- induce_exp %>% filter(grepl("neg", name))
+neg_2mad_Induced <- median(neg$normalized_RNA_exp_Induced_12) + 2*mad(neg$normalized_RNA_exp_Induced_12)
+neg_2mad_Uninduced <- median(neg$normalized_RNA_exp_UnInduced_12) + 2*mad(neg$normalized_RNA_exp_UnInduced_12)
+neg_2mad_FC <-  median(neg$ratio) + 2*mad(neg$ratio)
+
+# Figure 4 Supplement: VIOLIN
+rel_ops <- c('lacOsym', 'lacO1', 'lacO2', 'lacO3', 'lacOscram')
+A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(ratio))) + 
+  geom_hline(yintercept = log2(neg_2mad_FC), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(1,2,3,4,5)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  labs(y = 'log2(Fold-change)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+
+B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_UnInduced_12))) + 
+  geom_hline(yintercept = log2(neg_2mad_Uninduced), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(0,2,4)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  labs(y = 'log2(Uninduced Expression)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+
+C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_Induced_12))) + 
+  geom_hline(yintercept = log2(neg_2mad_Induced), linetype = 'dashed', size = 1) +
+  scale_y_discrete(limits = c(0,3,6,9)) +
+  geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
+  geom_boxplot(width = 0.06, outlier.shape = NA, fill = 'white') +
+  scale_fill_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) +
+  labs(y = 'log2(Induced Expression)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.position = 'none')
+plot_grid(B,C,A, ncol = 1)
+
+numbers <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1)
+
+dim(filter(numbers, grepl("COMBO", Library)))
+dim(filter(numbers, grepl("DISTAL", Library)))
+dim(filter(numbers, grepl("STERIC", Library)))
+dim(filter(numbers, grepl("MULTIPLE", Library)))
+
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4D_orig.png', height = 12, width = 12)
+```
+
+
+```{r}
+# Figure 4D
+top10combo <- induce_combo %>% 
+  filter(Proximal %in% rel_ops & Distal %in% rel_ops) %>%
+  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
+top10distal <- induce_distal %>%
+  filter(Offset == 22) %>% 
+  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
+top10multiple <- induce_multiple %>% top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
+top10steric <- induce_steric %>%
+  filter(Loop_Distance == 55) %>% 
+  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
+
+inducible <- bind_rows(top10combo, top10distal, top10multiple, top10steric)
+
+maxCombo <- top_n(top10combo, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxDistal <- top_n(top10distal, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxMultiple <- top_n(top10multiple, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxSteric <- top_n(top10steric, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+
+inducible %>%
+  mutate(orderExp = normalized_RNA_exp_UnInduced_12) %>%
+  gather(Type, Expression, 'normalized_RNA_exp_Induced_12':'normalized_RNA_exp_UnInduced_12') %>%
+  ggplot(aes(x = reorder(name, orderExp), y = Expression)) + geom_line(aes(color = Library), size =2, alpha = 1) + geom_point(aes(fill = Type), pch = 21, color = 'black', size =3.5) + theme(axis.text.x = element_blank()) +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) + 
+  scale_fill_manual(values = c("skyblue", "grey")) + 
+  geom_hline(yintercept = maxCombo, color = '#75af4f', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxDistal, color = '#3b9bb3', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxMultiple, color = '#e39225', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxSteric, color = '#c13b41', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  labs(x = 'Variant')
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4E.pdf', height = 4, width = 15)
+```
+
+
+
+```{r}
+# Figure 4E
+top10combo <- induce_combo %>% 
+  filter(Proximal %in% rel_ops & Distal %in% rel_ops) %>%
+  top_n(25, wt = ratio)
+top10distal <- induce_distal %>%
+  filter(Offset == 22) %>% 
+  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
+top10multiple <- induce_multiple %>% top_n(25, wt = ratio)
+top10steric <- induce_steric %>%
+  filter(Loop_Distance == 55) %>% 
+  top_n(25, wt = ratio)
+
+inducible <- bind_rows(top10combo, top10distal, top10multiple, top10steric)
+
+maxCombo <- top_n(top10combo, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxDistal <- top_n(top10distal, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxMultiple <- top_n(top10multiple, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+maxSteric <- top_n(top10steric, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
+
+inducible %>%
+  mutate(orderExp = normalized_RNA_exp_UnInduced_12) %>%
+  gather(Type, Expression, 'normalized_RNA_exp_Induced_12':'normalized_RNA_exp_UnInduced_12') %>%
+  ggplot(aes(x = reorder(name, orderExp), y = Expression)) + geom_line(aes(color = Library), size =2, alpha = 1) + geom_point(aes(fill = Type), pch = 21, color = 'black', size =3.5) + theme(axis.text.x = element_blank()) +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) + 
+  scale_fill_manual(values = c("skyblue", "grey")) + 
+  geom_hline(yintercept = maxCombo, color = '#75af4f', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxDistal, color = '#3b9bb3', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxMultiple, color = '#e39225', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  geom_hline(yintercept = maxSteric, color = '#c13b41', linetype = 'dashed', size = 1.5, alpha = 0.8) +
+  labs(x = 'Variant')
+ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4E_v2.pdf', height = 4, width = 15)
+```
+
+```{r}
+
+neg <- induce_exp %>% filter(grepl("neg", name))
+neg_2mad_Induced <- median(neg$normalized_RNA_exp_Induced_12) + 2*mad(neg$normalized_RNA_exp_Induced_12)
+neg_2mad_Uninduced <- median(neg$normalized_RNA_exp_UnInduced_12) + 2*mad(neg$normalized_RNA_exp_UnInduced_12)
+neg_2mad_FC <-  median(neg$ratio) + 2*mad(neg$ratio)
+
+rel_ops <- c('lacOsym', 'lacO1', 'lacO2', 'lacO3', 'lacOscram')
+size_COMBO <- nrow(filter(induce_combo, ratio > 1, Proximal %in% rel_ops, Distal %in% rel_ops))
+size_DISTAL <- nrow(filter(induce_distal, ratio > 1, Offset == 22))
+size_MULTIPLE <- nrow(filter(induce_multiple, ratio > 1))
+size_STERIC <- nrow(filter(induce_steric, ratio > 1, Loop_Distance == 55))
+
+data <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(ratio > 1)
+
+# ROC-like curve 
+Uninduced <- data.frame("Library" = character(),
+                        "Proportion" = double(), 
+                        "Threshold" = double(), stringsAsFactors=FALSE)
+
+for(i in seq(min(data$normalized_RNA_exp_UnInduced_12), max(data$normalized_RNA_exp_UnInduced_12), 0.1)) {
+  COMBO <- nrow(filter(data, grepl("COMBO", data$Library), normalized_RNA_exp_UnInduced_12 < i))
+  DISTAL <- nrow(filter(data, grepl("DISTAL", data$Library), normalized_RNA_exp_UnInduced_12 < i))
+  MULTIPLE <- nrow(filter(data, grepl("MULTIPLE", data$Library), normalized_RNA_exp_UnInduced_12 < i))
+  STERIC <- nrow(filter(data, grepl("STERIC", data$Library), normalized_RNA_exp_UnInduced_12 < i))
+  
+  Uninduced[nrow(Uninduced) + 1, ] <- c("COMBO", COMBO/size_COMBO, i)
+  Uninduced[nrow(Uninduced) + 1, ] <- c("DISTAL", DISTAL/size_DISTAL, i)
+  Uninduced[nrow(Uninduced) + 1, ] <- c("MULTIPLE", MULTIPLE/size_MULTIPLE, i)
+  Uninduced[nrow(Uninduced) + 1, ] <- c("STERIC", STERIC/size_STERIC, i)
+}
+
+A <- Uninduced %>%
+  ggplot(aes(x = log2(as.numeric(Threshold)), y = as.numeric(Proportion))) + geom_step(aes(color = Library), size = 1.3) +
+  labs(x = 'Uninduced Expression Threshold', y = 'Proportion of Variants') +
+  geom_vline(xintercept = log2(neg_2mad_Uninduced), linetype = 'dashed', size = 0.7) +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41'))  
+
+
+
+Induced <- data.frame("Library" = character(),
+                        "Proportion" = double(), 
+                        "Threshold" = double(), stringsAsFactors=FALSE)
+
+for(i in seq(min(data$normalized_RNA_exp_Induced_12), max(data$normalized_RNA_exp_Induced_12), 0.1)) {
+  COMBO <- nrow(filter(data, grepl("COMBO", data$Library), normalized_RNA_exp_Induced_12 < i))
+  DISTAL <- nrow(filter(data, grepl("DISTAL", data$Library), normalized_RNA_exp_Induced_12 < i))
+  MULTIPLE <- nrow(filter(data, grepl("MULTIPLE", data$Library), normalized_RNA_exp_Induced_12 < i))
+  STERIC <- nrow(filter(data, grepl("STERIC", data$Library), normalized_RNA_exp_Induced_12 < i))
+  
+  Induced[nrow(Induced) + 1, ] <- c("COMBO", COMBO/size_COMBO, i)
+  Induced[nrow(Induced) + 1, ] <- c("DISTAL", DISTAL/size_DISTAL, i)
+  Induced[nrow(Induced) + 1, ] <- c("MULTIPLE", MULTIPLE/size_MULTIPLE, i)
+  Induced[nrow(Induced) + 1, ] <- c("STERIC", STERIC/size_STERIC, i)
+}
+
+B <- Induced %>%
+  ggplot(aes(x = log2(as.numeric(Threshold)), y = as.numeric(Proportion))) + geom_step(aes(color = Library), size = 1.3) +
+  labs(x = 'Induced Expression Threshold', y = 'Proportion of Variants') +
+  geom_vline(xintercept = log2(neg_2mad_Induced), linetype = 'dashed', size = 0.7) +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41'))
+
+
+FC <- data.frame("Library" = character(),
+                        "Proportion" = double(), 
+                        "Threshold" = double(), stringsAsFactors=FALSE)
+
+for(i in seq(min(data$ratio), max(data$ratio), 0.1)) {
+  COMBO <- nrow(filter(data, grepl("COMBO", data$Library), ratio < i))
+  DISTAL <- nrow(filter(data, grepl("DISTAL", data$Library), ratio < i))
+  MULTIPLE <- nrow(filter(data, grepl("MULTIPLE", data$Library), ratio < i))
+  STERIC <- nrow(filter(data, grepl("STERIC", data$Library), ratio < i))
+  
+  FC[nrow(FC) + 1, ] <- c("COMBO", COMBO/size_COMBO, i)
+  FC[nrow(FC) + 1, ] <- c("DISTAL", DISTAL/size_DISTAL, i)
+  FC[nrow(FC) + 1, ] <- c("MULTIPLE", MULTIPLE/size_MULTIPLE, i)
+  FC[nrow(FC) + 1, ] <- c("STERIC", STERIC/size_STERIC, i)
+}
+
+
+C <- FC %>%
+  ggplot(aes(x = log2(as.numeric(Threshold)), y = as.numeric(Proportion))) + geom_step(aes(color = Library), size = 1.3) +
+  labs(x = 'Fold-change Threshold', y = 'Proportion of Variants') +
+  geom_vline(xintercept = log2(neg_2mad_FC), linetype = 'dashed', size = 0.7) +
+  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41'))
+
+
+legend <- get_legend(
+  A + theme(legend.box.margin = margin(0, 0, 0, 15),
+            legend.text = element_text(size = 20),
+            legend.title = element_text(size = 22)))
+
+prow <- plot_grid(A + theme(legend.position = 'none'),
+          B + theme(legend.position = 'none'),
+          C + theme(legend.position = 'none'), ncol = 2)
+prow + draw_grob(legend, 2/3.3, 0, 0.7, 0.6) 
+ggsave('~/Desktop/InducibleArchitectures/FreshFigs/Figure4D_v4.png', height = 7, width = 9)
+```
+
+
+
+
+
+
+
+
+
+
+
