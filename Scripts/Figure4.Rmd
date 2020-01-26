@@ -63,23 +63,23 @@ geom_text(aes(label=signif(mean_diff, 3)), size=5) +
          axis.title = element_text(size = 20),
          title = element_text(size = 24),
          legend.text = element_text(size = 20))
-ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4A.pdf', width = 10, height = 8)
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4A.pdf', width = 10, height = 8)
 
-combo_multiple_comp %>% 
-  filter(Proximal == 'lacOscram') %>%
-  group_by(Distal_left, Distal_right) %>%
-  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
-  ungroup() %>%
-  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), color = 'black', size = 0.25, alpha = 1) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+#combo_multiple_comp %>% 
+#  filter(Proximal == 'lacOscram') %>%
+#  group_by(Distal_left, Distal_right) %>%
+#  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+#  ungroup() %>%
+#  ggplot(., aes(x = Distal_right, y = Distal_left)) + geom_tile(aes(fill = mean_diff), color = 'black', size = 0.25, alpha = 1) #+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
   #scale_fill_distiller(palette = 'PuRd', na.value = 'gray20', name = 'Change in Fold-change') +
-  scale_fill_viridis(option = 'viridis') +
+#  scale_fill_viridis(option = 'viridis') +
   #scale_fill_gradient2(low = "yellow", mid = "black", high = "purple", midpoint = 0) +
-  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Canonical Distal', y = 'Additional Distal', size = 20) +
-geom_text(aes(label=signif(mean_diff, 3)), size=5) +
-  theme(axis.text = element_text(size = 20),
-         axis.title = element_text(size = 20),
-         title = element_text(size = 24),
-         legend.text = element_text(size = 20))
+#  scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Canonical Distal', y = 'Additional Distal', size = 20) +
+#geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+#  theme(axis.text = element_text(size = 20),
+#         axis.title = element_text(size = 20),
+#         title = element_text(size = 24),
+#         legend.text = element_text(size = 20))
 ```
 
 ```{r}
@@ -136,7 +136,7 @@ test %>%
         axis.title = element_text(size = 20),
         title = element_text(size = 24)) +
   facet_wrap(~Condition, scales = 'fixed') 
-ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B(Osym).pdf', height = 5, width = 6)
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B(Osym).pdf', height = 5, width = 6)
 
 # Fold changes
 fc <- bind_rows(temp_combo, temp_dist) 
@@ -155,7 +155,7 @@ ggplot(fc, aes(x = Library, y = log2(ratio))) +
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 20),
         title = element_text(size = 24))
-ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B2(new).pdf', height = 5, width = 3.5)
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Fig_4B2(new).pdf', height = 5, width = 3.5)
 ```
 
 ```{r}
@@ -269,7 +269,7 @@ neg_2mad_FC <-  median(neg$ratio) + 2*mad(neg$ratio)
 
 # Figure 4 Supplement: VIOLIN
 rel_ops <- c('lacOsym', 'lacO1', 'lacO2', 'lacO3', 'lacOscram')
-A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
   bind_rows(., induce_multiple) %>%
   bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
   filter(log2(ratio) >= 1) %>%
@@ -285,7 +285,7 @@ A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops)
         title = element_text(size = 24),
         legend.position = 'none')
 
-B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
   bind_rows(., induce_multiple) %>%
   bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
   filter(log2(ratio) >= 1) %>%
@@ -301,7 +301,7 @@ B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops),
         title = element_text(size = 24),
         legend.position = 'none')
 
-C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
   bind_rows(., induce_multiple) %>%
   bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
   filter(log2(ratio) >= 1) %>%
@@ -318,7 +318,7 @@ C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops)
         legend.position = 'none')
 plot_grid(B,C,A, ncol = 1)
 
-numbers <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+numbers <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
   bind_rows(., induce_multiple) %>%
   bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
   filter(log2(ratio) >= 1)
@@ -328,7 +328,43 @@ dim(filter(numbers, grepl("DISTAL", Library)))
 dim(filter(numbers, grepl("STERIC", Library)))
 dim(filter(numbers, grepl("MULTIPLE", Library)))
 
-ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4D_orig.png', height = 12, width = 12)
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4D.pdf', height = 12, width = 12)
+
+# significance testing
+DF = bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
+  bind_rows(., induce_multiple) %>%
+  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
+  filter(log2(ratio) >= 1) %>%
+  mutate(log2ratio = log2(ratio)) %>%
+  mutate(log2Unind = log2(normalized_RNA_exp_UnInduced_12)) %>%
+  mutate(log2Ind = log2(normalized_RNA_exp_Induced_12))
+
+library_names = c("COMBO", "DISTAL", "MULTIPLE", "STERIC")
+combos = t(combn(library_names, 2))
+
+# fold-change differences
+FC_sig_table = data.frame("library1" = integer(), "library2" = integer(), "P" = double(), stringsAsFactors=FALSE)
+for(i in 1:6) {
+  P = wilcox.test(filter(DF, Library == combos[i,1])$log2ratio, filter(DF, Library == combos[i,2])$log2ratio)$p.value
+  FC_sig_table[nrow(FC_sig_table) + 1, ] <- c(combos[i,1], combos[i,2], P)
+} 
+FC_corrected_sig_table = FC_sig_table %>% mutate(FDR = p.adjust(P, method = 'BH'))
+
+# uninduced differences
+U_sig_table = data.frame("library1" = integer(), "library2" = integer(), "P" = double(), stringsAsFactors=FALSE)
+for(i in 1:6) {
+  P = wilcox.test(filter(DF, Library == combos[i,1])$log2Unind, filter(DF, Library == combos[i,2])$log2Unind)$p.value
+  U_sig_table[nrow(U_sig_table) + 1, ] <- c(combos[i,1], combos[i,2], P)
+} 
+U_corrected_sig_table = U_sig_table %>% mutate(FDR = p.adjust(P, method = 'BH'))
+
+# induced differences
+I_sig_table = data.frame("library1" = integer(), "library2" = integer(), "P" = double(), stringsAsFactors=FALSE)
+for(i in 1:6) {
+  P = wilcox.test(filter(DF, Library == combos[i,1])$log2Ind, filter(DF, Library == combos[i,2])$log2Ind)$p.value
+  I_sig_table[nrow(I_sig_table) + 1, ] <- c(combos[i,1], combos[i,2], P)
+} 
+I_corrected_sig_table = I_sig_table %>% mutate(FDR = p.adjust(P, method = 'BH'))
 ```
 
 
@@ -363,7 +399,7 @@ inducible %>%
   geom_hline(yintercept = maxMultiple, color = '#e39225', linetype = 'dashed', size = 1.5, alpha = 0.8) +
   geom_hline(yintercept = maxSteric, color = '#c13b41', linetype = 'dashed', size = 1.5, alpha = 0.8) +
   labs(x = 'Variant')
-ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4E.pdf', height = 4, width = 15)
+#ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4E.pdf', height = 4, width = 15)
 ```
 
 
@@ -505,7 +541,98 @@ ggsave('~/Desktop/InducibleArchitectures/FreshFigs/Figure4D_v4.png', height = 7,
 ```
 
 
+```{r}
+# small calculations
+combo_multiple_diff = combo_multiple_comp %>% 
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Distal_left, Distal_right) %>%
+  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+  ungroup()
 
+# range of distal+ effect
+max(combo_multiple_diff$mean_diff)/min(combo_multiple_diff$mean_diff)
+
+# Pmultiple ===
+
+# Pcore ===
+# distance does not matter
+distances = unique(induce_distal$Offset)
+combos = t(combn(distances, 2)) # generate all pairwise comparisons
+sig_table = data.frame("distance1" = integer(), "distance2" = integer(), "P" = double(), stringsAsFactors=FALSE)
+induce_core = induce_distal %>% mutate(log2ratio = log2(ratio))
+for(i in 1:55) {
+  P = t.test(filter(induce_core, Offset == combos[i,1])$log2ratio, filter(induce_core, Offset == combos[i,2])$log2ratio)$p.value
+  sig_table[nrow(sig_table) + 1, ] <- c(combos[i,1], combos[i,2], P)
+} # nothing significant at the 0.05 threshold
+
+# how much higher uninduced/induced on average?
+temp_combo <- induce_combo %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  filter(Distal == 'lacOsym' | Distal == 'lacO1' | Distal == 'lacO2' | Distal == 'lacO3' | Distal == 'lacOscram') %>%
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOscram')
+temp_dist <- induce_distal %>%
+    filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+    filter(Offset == 29)
+
+mean(temp_dist$normalized_RNA_exp_UnInduced_12)/mean(temp_combo$normalized_RNA_exp_UnInduced_12)
+mean(temp_dist$normalized_RNA_exp_Induced_12)/mean(temp_combo$normalized_RNA_exp_Induced_12)
+
+# Psteric ====
+# for scram/scram promoters, fold-difference between best promoter with UP/ext-10 and consensus -10 promoter with no UP/ext-10
+filter(induce_steric, Proximal == 'lacOscram', Core == 'lacOscram', Min_10 == 'minus10_7A', UP == 'up_326x', Loop_Distance == '55', Extended_Min_10 == 'ext_min10') %>% select(normalized_RNA_exp_UnInduced_12)
+filter(induce_steric, Proximal == 'lacOscram', Core == 'lacOscram', Min_10 == 'minus10cons', UP == 'no_up', Loop_Distance == '55', Extended_Min_10 == 'ext_UV5') %>% select(normalized_RNA_exp_UnInduced_12)
+11.87551/0.9128649
+
+# height of highest bar in Fig4C
+max(induce_steric$ratio)
+
+# range of expression/FC for each library ========
+# Pcombo
+max(induce_combo$normalized_RNA_exp_Induced_12)
+min(induce_combo$normalized_RNA_exp_Induced_12)
+max(induce_combo$normalized_RNA_exp_UnInduced_12)
+min(induce_combo$normalized_RNA_exp_UnInduced_12)
+max(induce_combo$ratio)
+min(induce_combo$ratio)
+max(induce_combo$normalized_RNA_exp_Induced_12)/min(induce_combo$normalized_RNA_exp_Induced_12)
+max(induce_combo$normalized_RNA_exp_UnInduced_12)/min(induce_combo$normalized_RNA_exp_UnInduced_12)
+max(induce_combo$ratio)/min(induce_combo$ratio)
+
+# Pmultiple
+max(induce_multiple$normalized_RNA_exp_Induced_12)
+min(induce_multiple$normalized_RNA_exp_Induced_12)
+max(induce_multiple$normalized_RNA_exp_UnInduced_12)
+min(induce_multiple$normalized_RNA_exp_UnInduced_12)
+max(induce_multiple$ratio)
+min(induce_multiple$ratio)
+max(induce_multiple$normalized_RNA_exp_Induced_12)/min(induce_multiple$normalized_RNA_exp_Induced_12)
+max(induce_multiple$normalized_RNA_exp_UnInduced_12)/min(induce_multiple$normalized_RNA_exp_UnInduced_12)
+max(induce_multiple$ratio)/min(induce_multiple$ratio)
+
+# Pcore
+max(induce_distal$normalized_RNA_exp_Induced_12)
+min(induce_distal$normalized_RNA_exp_Induced_12)
+max(induce_distal$normalized_RNA_exp_UnInduced_12)
+min(induce_distal$normalized_RNA_exp_UnInduced_12)
+max(induce_distal$ratio)
+min(induce_distal$ratio)
+max(induce_distal$normalized_RNA_exp_Induced_12)/min(induce_distal$normalized_RNA_exp_Induced_12)
+max(induce_distal$normalized_RNA_exp_UnInduced_12)/min(induce_distal$normalized_RNA_exp_UnInduced_12)
+max(induce_distal$ratio)/min(induce_distal$ratio)
+
+# Psteric
+max(induce_steric$normalized_RNA_exp_Induced_12)
+min(induce_steric$normalized_RNA_exp_Induced_12)
+max(induce_steric$normalized_RNA_exp_UnInduced_12)
+min(induce_steric$normalized_RNA_exp_UnInduced_12)
+max(induce_steric$ratio)
+min(induce_steric$ratio)
+max(induce_steric$normalized_RNA_exp_Induced_12)/min(induce_steric$normalized_RNA_exp_Induced_12)
+max(induce_steric$normalized_RNA_exp_UnInduced_12)/min(induce_steric$normalized_RNA_exp_UnInduced_12)
+max(induce_steric$ratio)/min(induce_steric$ratio)
+
+
+```
 
 
 

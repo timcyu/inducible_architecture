@@ -147,6 +147,76 @@ ggsave('~/Desktop/InducibleArchitectures/Figure2/Fig_2B.pdf', width = 10, height
 ```
 
 
+```{r}
+# small calculations
+
+# 1. range of uninduced expression of library
+max(induce_combo$normalized_RNA_exp_UnInduced_12)/min(induce_combo$normalized_RNA_exp_UnInduced_12)
+
+# 2. range of uninduced expression for each core promoter
+induce_combo %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(min_unind = min(normalized_RNA_exp_UnInduced_12),
+         max_unind = max(normalized_RNA_exp_UnInduced_12),
+         range = max_unind/min_unind) %>%
+  ungroup() %>%
+  select(Min_10, Min_35, range) %>%
+  distinct()
+
+# 3. For consensus core promoter, is proximal O1/Osym largely deterministic of fold-change?
+# fold-difference
+group1 = filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  mutate(avg_fc = mean(ratio)) %>% select(avg_fc) %>% distinct()
+group2 = filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons', !(Proximal == 'lacOsym' | Proximal == 'lacO1')) %>% mutate(avg_fc = mean(ratio)) %>% select(avg_fc) %>% distinct()
+group1[,1]/group2[,1] # fold-difference is 4.61
+
+# T-test
+group1 = filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym' | Proximal == 'lacO1')
+group2 = filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons', !(Proximal == 'lacOsym' | Proximal == 'lacO1'))
+t.test(group1$ratio, group2$ratio) # Welch two-sample t-test, p-value = 1.44e-06
+
+# 4. how low was uninduced expression for weak core promoters?
+induce_combo %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(median_unind = median(normalized_RNA_exp_UnInduced_12),
+         avg_unind = mean(normalized_RNA_exp_UnInduced_12)) %>%
+  ungroup() %>%
+  select(Min_10, Min_35, median_unind, avg_unind) %>%
+  distinct()
+
+# fold-change of consensus/proxOsym/distalOsym vs. consensus/proxOsym/distalO3
+induce_combo %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym', Distal == 'lacOsym') %>%
+  select(ratio)
+induce_combo %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym', Distal == 'lacO3') %>%
+  select(ratio)
+
+# fold-change of consensus/proxOsym/distalOsym vs. consensus/proxO1/distalOsym
+induce_combo %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym', Distal == 'lacOsym') %>%
+  select(ratio, normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)
+induce_combo %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacO1', Distal == 'lacOsym') %>%
+  select(ratio, normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)
+
+1.463874
+2.58448
+
+6.771608
+23.19362	
+# how much lower is the induced expression of consensus/proxOsym/distalOsym vs. consensus/proxOsym/distalO3 
+base = filter(induce_combo, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym', Distal == 'lacOsym')$normalized_RNA_exp_Induced_12
+
+test = induce_combo %>% 
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym') %>%
+  mutate(rel_induced_exp = normalized_RNA_exp_Induced_12/base) %>%
+  mutate(avg = mean(rel_induced_exp))
+
+
+induce_combo %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Proximal == 'lacOsym', Distal == 'lacO3') %>%
+  select(normalized_RNA_exp_Induced_12)
+37.63329/6.771608
+
+```
+
+
 
 
 

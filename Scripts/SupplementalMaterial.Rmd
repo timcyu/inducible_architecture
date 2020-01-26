@@ -423,8 +423,18 @@ A <- induce_distal %>% filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') 
 
 induce_distal$Min_10  <- with(induce_distal, reorder(Min_10, normalized_RNA_exp_Induced_12, median))
 induce_distal$Min_35 <- with(induce_distal, reorder(Min_35, normalized_RNA_exp_Induced_12, median))
+induce_distal$Core <- with(induce_distal, reorder(Core, -normalized_RNA_exp_UnInduced_12, median))
 
 B <- induce_distal %>%
+  ggplot(aes(x = as.factor(realOffset), y = log2(ratio))) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = Core), alpha = 0.7) +
+  scale_color_viridis(discrete = TRUE) + 
+  labs(x = 'Operator spacing', y = 'log2(Fold-change)') +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 24),
+        legend.text = element_text(size = 16))
+
+C <- induce_distal %>%
   filter(Offset == 22) %>%
   group_by(Min_10,Min_35) %>%
   mutate(avgInd = mean(normalized_RNA_exp_Induced_12)) %>%
@@ -443,11 +453,9 @@ ggplot(aes(x = Min_10, y = Min_35)) +
         axis.title.y.left = element_text(size = 24)) +
   labs(x = '-10 Element', y = '-35 Element')
 
-plot_grid(A,B, ncol = 1, labels = 'AUTO', label_size = 20) 
-ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS7.pdf', width = 13, height = 16)
-  
-
-```
+plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20) 
+ggsave('~/Desktop/InducibleArchitectures/FigureSX/FigureS7.pdf', width = 13, height = 22)
+ ```
 
 ```{r}
 # Psteric supplement - Although weak, if any, transcription was detected from promoters with only a -10, we found that relatively strong promoters could be created by the addition of an UP-element and extended -10 
@@ -797,11 +805,11 @@ induce_multiple$Proximal = factor(induce_multiple$Proximal, levels=c('lacOscram'
 
 induce_multiple %>%
   filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
-  ggplot(aes(x = Proximal, y = ratio)) + 
-  geom_bar(aes(fill = Proximal), position = 'dodge', stat = 'identity', alpha = 1, color = 'black') +
-  #geom_tile(aes(fill = ratio), alpha = 1, size = 0.5, color = 'gray20') + 
+  ggplot(aes(x = Proximal, y = 'x')) + 
+  #geom_bar(aes(fill = Proximal), position = 'dodge', stat = 'identity', alpha = 1, color = 'black') +
+  geom_tile(aes(fill = log2(ratio)), alpha = 1, size = 0.5, color = 'gray20') + 
   scale_x_discrete(limits = c("lacOscram", "lacO2", "lacO3", "lacO1", "lacOsym")) +
-  scale_fill_viridis(discrete = TRUE) +
+  scale_fill_viridis() +
   facet_grid(Distal_left ~ Distal_right)
   
   
