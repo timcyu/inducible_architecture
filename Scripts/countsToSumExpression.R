@@ -1,4 +1,4 @@
-setwd("~/Desktop/InducibleArchitectures/raw_data/")
+setwd("../raw_data/")
 
 library("ggplot2")
 library("dplyr")
@@ -149,8 +149,7 @@ induce_exp$name <- gsub("LOOP", "", induce_exp$name)
 induce_exp$name <- gsub("bp", "", induce_exp$name)
 
 backup <- induce_exp
-write.table(backup, "../processed_data/induce_exp(updated).txt", quote = F, row.names = F)
-#induce_exp <- read.table("./induce_exp.txt", header = T)
+write.table(backup, "../processed_data/LacZ_variant_exp.txt", quote = F, row.names = F)
 
 # =========================================================================================================
 # Histograms
