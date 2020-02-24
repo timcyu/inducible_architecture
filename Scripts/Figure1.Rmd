@@ -1,0 +1,340 @@
+---
+title: "Figure1_ExploreUV5Architecture"
+author: "Guillaume Urtecho"
+date: "9/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = getwd())
+
+library("ggplot2")
+library(tidyverse)
+library("wesanderson")
+names(wes_palettes)
+require(cowplot)
+pal <- wes_palette('Zissou1', 6, type = 'continuous')
+
+options(stringsAsFactors = F)
+
+```
+
+
+Read in Data and format names
+```{r}
+
+loop_MOPS <- read.table("../processed_data/fLP3.loop_MOPS_glu_expression.txt", header = T)
+
+loop_MOPS$name <- gsub("offset", "", loop_MOPS$name)
+loop_MOPS$name <- gsub("_cap", "", loop_MOPS$name)
+loop_MOPS$name <- gsub("lac_bg", "lac", loop_MOPS$name)
+
+loop_vars <- loop_MOPS %>% separate(col = 'name', into = c("TF", "Distal", "Offset", "Background", 'Proximal') , sep = "_", remove = F) 
+loop_vars <- loop_vars[!is.na(loop_vars$Proximal),]
+loop_vars$Offset <- as.numeric(loop_vars$Offset)
+
+TF_spacing <- filter(loop_vars, Background == 'ind')
+```
+
+Barcodes per variant
+```{r}
+#TF_spacing <- subset(loop_vars, !grepl("apFAB", loop_vars$name))
+#read.table("../")
+median_barcodes <- median(TF_spacing$num_barcodes)
+
+ggplot(TF_spacing, aes(x=num_barcodes)) +
+      geom_histogram(color = 'black') +
+      scale_x_log10() +
+      labs(x = "Number of barcodes",
+            y = 'Counts') +
+      annotation_logticks(sides = 'b') +
+      geom_vline(xintercept = median_barcodes, color = 'red', linetype = 'dashed') +
+      annotate('text', x = 10, y = 90, label = paste("Median =", median_barcodes, "barcodes"), size = 8) +
+    theme(axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24))
+
+ggsave('../FigureSX/FigureS1.pdf', units = 'in', width = 7.29, height = 4.51)
+```
+
+What percent of library variants were tested?
+```{r}
+# What percent of variants were tested?
+full_library <- read.table("../raw_data/looping_architectures/looping_lib_v2_controls_clean.txt", col.names = c('name', 'sequence'))
+full_library$name <- gsub("offset", "", full_library$name)
+full_library$name <- gsub("_cap", "", full_library$name)
+full_library$name <- gsub("lac_bg", "lac", full_library$name)
+
+full_library <- subset(full_library, grepl("ind", full_library$name)) 
+
+temp <- subset(full_library, !grepl("control", full_library$name)) %>% anti_join(., TF_spacing, by = 'name')
+  
+subset(loop_vars, !grepl("apFAB", loop_vars$name))
+
+head(TF_spacing$name)
+
+paste(signif(100*nrow(TF_spacing)/nrow(full_library),3), "%", sep = '')
+```
+
+```{r}
+neg <- subset(loop_MOPS, grepl("neg_control", loop_MOPS$name))
+pos <- subset(loop_MOPS, grepl("pos_control", loop_MOPS$name))
+
+temp <-subset(loop_MOPS, grepl("_ind_", loop_MOPS$name)) %>%
+  subset(!grepl('apFAB',.$name))
+cor <- cor(temp$RNA_exp_1, temp$RNA_exp_2)
+
+subset(loop_MOPS, grepl("_ind_", loop_MOPS$name)) %>%
+  subset(!grepl('apFAB',.$name)) %>%
+  ggplot(., aes(RNA_exp_1, RNA_exp_2)) + 
+  geom_point(alpha = .6) +
+  scale_x_log10() + scale_y_log10() + annotation_logticks(sides = 'bl') +
+  annotate("text", label = paste("italic(r)==", signif(cor, 3)), parse = TRUE,
+           x = 0.2, y = 1, size = 8) +
+  xlab('Technical Replicate #1') + ylab('Technical Replicate #2') +
+  ggtitle('Correlation between replicate TSS measurements') +
+  geom_point(data = neg,aes(RNA_exp_1, RNA_exp_2), color = "firebrick1", alpha = .6) +
+  geom_point(data = pos,aes(RNA_exp_1, RNA_exp_2), color = "dodgerblue1", alpha = .6) +
+  annotate("text", label = "Negative Controls", x = 3, y = .1, color = 'firebrick1', size = 8) +
+  annotate("text", label = "Positive Controls", x = 3, y = .2, color = 'dodgerblue1', size = 8) +
+  theme(axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x.bottom = element_text(size = 24),
+        axis.title.y.left = element_text(size = 24))
+
+ggsave('../Figure1/Figure1C.pdf', units = 'in',  width = 6, height = 6)
+
+```
+
+#Figure 1D - Repression by proximal site
+
+```{r}
+mean_proximal <- TF_spacing %>% filter(Proximal == 'proximal' & Background == 'ind', Distal == 'nodistal') %>%
+    group_by(TF) %>%
+    mutate(mean_expression_proximal = mean(RNA_exp_12)) %>%
+    ungroup() %>%
+    select(TF, mean_expression_proximal) %>% distinct()
+    
+
+mean_noproximal <- TF_spacing %>% filter(Proximal == 'nullproximal' & Background == 'ind', Distal == 'nodistal') %>%
+    group_by(TF) %>%
+    mutate(mean_expression_noproximal = mean(RNA_exp_12)) %>%
+    ungroup() %>%
+    select(TF, mean_expression_noproximal) %>% distinct()
+
+left_join(mean_proximal, mean_noproximal, by = 'TF') %>%
+    mutate(relative_repression = mean_expression_proximal/mean_expression_noproximal) %>%
+    ggplot(., aes(x= TF, y = relative_repression, fill = TF)) +
+    geom_bar(stat = 'identity', position = 'dodge', width = .65) +
+    scale_fill_manual(values = pal) +
+    labs(x = 'Transcription Factor', y = 'Relative repression by proximal site', Title = 'Effect of Repressor at Proximal Site') + 
+        theme(aspect.ratio = 1.5/1,
+                axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none')
+
+
+ggsave('../Figure1/Figure1D.pdf', units = 'in', width = 14, height = 6)
+```
+
+Figure 1E - Repression by lone Distal site
+```{r}
+
+#temp <- loop_vars %>% filter(., !grepl("apFAB",name), Background == 'ind', Proximal == 'nullproximal')
+
+
+TF_spacing %>% filter(., Proximal == 'nullproximal', Distal == 'distal') %>%
+  left_join(., mean_noproximal, by = 'TF') %>%
+  mutate(relative_distal = RNA_exp_12/mean_expression_noproximal, spacing=Offset+95) %>% 
+  ggplot(aes(spacing, relative_distal, color = TF)) +
+  geom_point(alpha = .3) + 
+  geom_line(alpha=.3) + 
+  geom_smooth(span=.5, se = FALSE, size = 1, alpha = 2.5) +
+  scale_color_manual(values = pal) +
+  geom_vline(xintercept = c(100,110,120), linetype='dotted') +
+  geom_hline(yintercept=1, linetype = 'dashed', color = 'red') +
+  facet_grid(~ TF) +
+  #ylim(.6,1.25) +
+  labs(title = 'Expression with only Distal Site', y = 'Relative Expression', x = 'Distance between operators (bp)') +
+          theme(axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none',
+                strip.text.x = element_text(size = 16),
+                strip.background = element_blank())
+
+ggsave('../Figure1/Figure1E.pdf', units = 'in', width = 12, height = 4)
+
+```
+
+Is araC trend linear/significant?
+```{r}
+TF_spacing %>% filter(., Proximal == 'nullproximal', Distal == 'distal') %>%
+  left_join(., mean_noproximal, by = 'TF') %>%
+  mutate(relative_distal = RNA_exp_12/mean_expression_noproximal, spacing=Offset+95) %>% filter(TF == 'AraC') %>% glm(RNA_exp_12 ~ spacing, data = .) %>% aov() %>% summary()
+
+```
+
+#Figure 1F - repression as a function of operator spacing
+```{r}
+
+#Normalize by dividing distal by nulldistal
+
+nulldistal_exp <- filter(TF_spacing,Distal == 'nulldistal', Background == 'ind')[c(12,14,6)] %>% mutate(nulldistal_exp=RNA_exp_12) %>% select(-RNA_exp_12)
+
+TF_spacing %>% filter(., Proximal == 'proximal', Background == 'ind', Distal == 'distal') %>% 
+  mutate(Phase = Offset/11, spacing=Offset+95) %>% 
+  left_join(nulldistal_exp, by = c('TF' , 'Offset')) %>%
+  group_by(TF, Offset) %>% mutate(RNA_exp_12_norm = RNA_exp_12/nulldistal_exp) %>%
+  ggplot(aes(spacing, RNA_exp_12_norm, color = TF)) +
+  geom_point(alpha = .3) + 
+  geom_line(alpha=.3) + 
+  geom_smooth(span=.5, se = FALSE, size = 1, alpha = 2.5) +
+  scale_color_manual(values = pal) +
+  geom_vline(xintercept = c(100,110,120), linetype='dotted') +
+  geom_hline(yintercept = 1, color = 'red', linetype = 'dashed') +
+  facet_grid(~TF) +
+  ylim(.6,1.25) +
+  labs(title = 'Expression Normalized by Null Sequence', y = 'Relative expression with distal', x = 'Distance between operators (bp)') +
+          theme(axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none',
+                strip.text.x = element_text(size = 16),
+                strip.background = element_blank())
+
+
+ggsave('../Figure1/Figure1F.pdf', units = 'in', width = 12, height = 4)
+
+```
+
+
+What are the effect sizes we observe?
+```{r}
+withproximal <- loop_vars %>% 
+    filter(., !grepl("apFAB",name),
+           Proximal == 'proximal',
+           Background == 'ind',
+           Distal == 'distal') %>% 
+    mutate(Phase = Offset/11) %>% 
+    left_join(nulldistal_exp, by = c('TF' , 'Offset')) %>%
+    group_by(TF, Offset) %>%
+    mutate(RNA_exp_12_norm = RNA_exp_12/nulldistal_exp) %>%
+    select(TF, RNA_exp_12_norm) %>% distinct() %>% na.omit() %>%
+    group_by(TF) %>%
+    mutate(max_prox_repression = min(RNA_exp_12_norm)) %>% 
+    select(TF, max_prox_repression) %>% distinct()
+
+withoutproximal <- TF_spacing %>% filter(., Proximal == 'nullproximal', Distal == 'distal') %>%
+  left_join(., mean_noproximal, by = 'TF') %>%
+  mutate(relative_distal = RNA_exp_12/mean_expression_noproximal, spacing=Offset+95) %>% na.omit() %>%
+    group_by(TF) %>%
+    mutate(max_noprox_repression = min(relative_distal)) %>% 
+    select(TF, max_noprox_repression) %>% distinct()
+
+left_join(withproximal, withoutproximal, by = 'TF') %>% 
+          mutate(effect_size = max_noprox_repression/max_prox_repression )
+
+```
+
+
+t.tests between groups
+```{r}
+withproximal <- loop_vars %>% 
+    filter(., !grepl("apFAB",name),
+           Proximal == 'proximal',
+           Background == 'ind',
+           Distal == 'distal') %>% 
+    mutate(Phase = Offset/11) %>% 
+    left_join(nulldistal_exp, by = c('TF' , 'Offset')) %>%
+    group_by(TF, Offset) %>%
+    mutate(RNA_exp_12_norm = RNA_exp_12/nulldistal_exp) %>%
+    select(TF, RNA_exp_12_norm, offset=Offset) %>% distinct() %>% na.omit()
+
+withoutproximal <- TF_spacing %>% filter(., Proximal == 'nullproximal', Distal == 'distal') %>%
+  left_join(., mean_noproximal, by = 'TF') %>%
+  mutate(relative_distal = RNA_exp_12/mean_expression_noproximal,
+         spacing=Offset+95) %>%
+  select(relative_distal, TF, offset=Offset) %>%
+  na.omit() %>% 
+  distinct()
+
+TFs <- distinct(select(withoutproximal, TF))$TF
+
+for (i in TFs){
+  transfact <- i
+temp <- left_join(withproximal, withoutproximal, by = c('offset'='offset', 'TF'='TF')) %>% filter(TF == transfact)
+
+print(transfact)  
+pval<- t.test(temp$RNA_exp_12_norm, temp$relative_distal, alternative = "less")$p.value
+fc <- mean(temp$relative_distal/temp$RNA_exp_12_norm)  
+
+print(paste(signif(fc, 3),'x distal effect with proximal at ', signif(pval,3), ' significance', sep =''))
+}
+
+```
+
+
+Alternative, with non-normalized exp
+```{}
+#Normalize by dividing distal by nulldistal
+
+nulldistal_exp <- filter(loop_vars,Distal == 'nulldistal', Background == 'ind')[c(12,14,6)]
+names(nulldistal_exp) <- c('TF', 'Offset', 'nulldistal_exp')
+
+loop_vars %>% filter(., !grepl("apFAB",name), Proximal == 'proximal', Background == 'ind', Distal == 'distal') %>% 
+  mutate(Phase = Offset/11) %>% 
+  left_join(nulldistal_exp, by = c('TF' , 'Offset')) %>%
+  group_by(TF, Offset) %>% mutate(RNA_exp_12_norm = RNA_exp_12/nulldistal_exp) %>%
+  ggplot(aes(Phase, RNA_exp_12, color = TF)) +
+  geom_point(alpha = .2) + 
+  geom_line(alpha=.2) + 
+  geom_smooth(span=.5, se = FALSE, size = .7, alpha = 1.8) +
+  scale_color_manual(values = pal) +
+  geom_vline(xintercept = c(1,2,3), linetype='dotted') +
+  geom_hline(yintercept = 1, color = 'red', linetype = 'dashed') +
+  #facet_wrap(~TF, scales = 'free') +
+  facet_grid(~TF) +
+ # ylim(.6,1.25) +
+  labs(title = 'Expression Normalized by Null Sequence', y = 'Expression') +
+          theme(axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none',
+                strip.text.x = element_text(size = 16),
+                strip.background = element_blank())
+
+
+TF_spacing %>% filter(., Proximal == 'proximal', Distal == 'distal') %>%
+  left_join(., mean_noproximal, by = 'TF') %>%
+  mutate(relative_distal = RNA_exp_12/mean_expression_noproximal, spacing=Offset+95) %>% 
+  ggplot(aes(spacing, relative_distal, color = TF)) +
+  geom_point(alpha = .3) + 
+ # geom_line(alpha=.3) + 
+  geom_smooth(span=.5, se = FALSE, size = 1, alpha = 2.5) +
+  scale_color_manual(values = pal) +
+  geom_vline(xintercept = c(100,110,120), linetype='dotted') +
+  geom_hline(yintercept=1, linetype = 'dashed', color = 'red') +
+  facet_grid(~ TF) +
+  #ylim(.6,1.25) +
+  labs(title = 'Expression with only Distal Site', y = 'Relative Expression', x = 'Distance between operators (bp)') +
+          theme(axis.text.x = element_text(size = 20, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none',
+                strip.text.x = element_text(size = 16),
+                strip.background = element_blank())
+
+```

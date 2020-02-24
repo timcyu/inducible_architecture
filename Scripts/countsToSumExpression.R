@@ -1,4 +1,4 @@
-setwd("../raw_data/")
+setwd("../raw_data/alternative_architectures")
 
 library("ggplot2")
 library("dplyr")

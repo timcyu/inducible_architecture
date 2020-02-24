@@ -1,0 +1,134 @@
+---
+title: "Nov2018_LoopingLibrary"
+author: "Guillaume Urtecho"
+date: "11/12/2018"
+output: html_document
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_knit$set(root.dir = getwd())
+options(stringsAsFactors = F)
+
+library(tidyverse)
+library(Biostrings)
+library(dplyr)
+```
+
+
+###Read in barcode files and combine
+
+```{r, include=FALSE}
+
+filelist = list.files(path = '../raw_data/looping_architectures/', pattern = 'fLP3_loop*')
+
+for(i in filelist) {
+  x <- read.table(paste('../raw_data/looping_architectures/', i, sep = ''), col.names=c(i, 'barcode'), header = F)
+  x[[i]] <- 1000000*x[[i]]/sum(x[[i]])  #Normalizes by RPM
+  assign(i,x)  
+}
+
+
+fLP3_loop <- full_join(fLP3_loop_DNA1.txt, fLP3_loop_DNA2.txt, by='barcode') %>% #Change .txt files to files you've read in
+  full_join(., fLP3_loop_RNA1.txt, by='barcode') %>%
+  full_join(., fLP3_loop_RNA2.txt, by='barcode') %>%
+  full_join(., fLP3_loop_RNA1_IPTG.txt, by='barcode') %>%
+  full_join(., fLP3_loop_RNA2_IPTG.txt, by='barcode') 
+
+
+names(fLP3_loop) = sub(".txt","", names(fLP3_loop)) #rename all colummns that were named after text file temp <- Loop_Data[c(-1,-5)]
+
+rm(list = c(filelist))
+rm(x) 
+
+```
+
+
+
+#First map posiive controls
+
+```{r}
+#Get expression of variants from barcode data
+barcode_stats_loop <- read.table("../raw_data/looping_architectures/lacZ_controls_bc_map.txt", header = T)
+mapped_barcodes <- barcode_stats_loop[!is.na(barcode_stats_loop$name),]
+Compare_barcode_Reps <- left_join(mapped_barcodes, fLP3_loop , by ='barcode')
+Compare_barcode_Reps[is.na(Compare_barcode_Reps)] <- 0
+
+#how many barcodes you have at end
+nrow(filter(Compare_barcode_Reps, fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0))  ##### Barcodes integrated of 2,011,019, 65% integrated
+
+
+temp <- filter(Compare_barcode_Reps, fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0)#, min_DNA_2 > 0
+
+pos_loop <- temp %>% group_by(name) %>% 
+  mutate(num_barcodes = n()) %>%
+  filter(num_barcodes >= 3) %>%
+  mutate(bcRD = (fLP3_loop_RNA1+fLP3_loop_RNA2)/(fLP3_loop_DNA1+fLP3_loop_DNA2),
+  bc_cv = sd(bcRD)/mean(bcRD)) %>%
+  mutate(RNA_exp_1 = sum(fLP3_loop_RNA1)/(sum(fLP3_loop_DNA1)),
+         RNA_exp_2 = sum(fLP3_loop_RNA2)/(sum(fLP3_loop_DNA2)),
+         RNA_exp_1_IPTG = sum(fLP3_loop_RNA1_IPTG)/(sum(fLP3_loop_DNA1)),
+         RNA_exp_2_IPTG = sum(fLP3_loop_RNA2_IPTG)/(sum(fLP3_loop_DNA2)),
+         DNA_sum = (sum(fLP3_loop_DNA2)+sum(fLP3_loop_DNA1)),
+         RNA_exp_12 = (RNA_exp_1+RNA_exp_2)/2,
+         RNA_exp_12_IPTG = (RNA_exp_1_IPTG+RNA_exp_2_IPTG)/2) %>% 
+  ungroup() %>% 
+  select(name, RNA_exp_1, RNA_exp_2, RNA_exp_1_IPTG, RNA_exp_2_IPTG,RNA_exp_12, RNA_exp_12_IPTG, DNA_sum, num_barcodes, bc_cv) %>% 
+  distinct() 
+
+pos_loop <- read.table("../raw_data/looping_architectures/synthetic_promoter_pos_controls_formatted.txt", col.names = c('name', 'variant')) %>% left_join(pos_loop,., by = 'name')
+```
+## R Markdown
+
+
+```{r}
+#Get expression of variants from barcode data
+barcode_stats_loop <- read.table("../raw_data/looping_architectures/lacZ_bc_map.txt", header = T, sep = ',', col.names = c('barcode','variant', 'num_reads'))
+mapped_barcodes <- barcode_stats_loop[!is.na(barcode_stats_loop$variant),]
+Compare_barcode_Reps <- left_join(mapped_barcodes, fLP3_loop , by ='barcode')
+Compare_barcode_Reps[is.na(Compare_barcode_Reps)] <- 0
+
+#how many barcodes you have at end
+nrow(filter(Compare_barcode_Reps, fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0))  ##### Barcodes integrated of 2,011,019, 65% integrated
+
+
+temp <- filter(Compare_barcode_Reps, fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0)#, min_DNA_2 > 0
+
+loop_MOPS <- temp %>% group_by(variant) %>% 
+  mutate(num_barcodes = n()) %>%
+  filter(num_barcodes >= 3) %>%
+  mutate(bcRD = (fLP3_loop_RNA1+fLP3_loop_RNA2)/(fLP3_loop_DNA1+fLP3_loop_DNA2),
+  bc_cv = sd(bcRD)/mean(bcRD)) %>%
+  mutate(RNA_exp_1 = sum(fLP3_loop_RNA1)/(sum(fLP3_loop_DNA1)),
+         RNA_exp_2 = sum(fLP3_loop_RNA2)/(sum(fLP3_loop_DNA2)),
+         RNA_exp_1_IPTG = sum(fLP3_loop_RNA1_IPTG)/(sum(fLP3_loop_DNA1)),
+         RNA_exp_2_IPTG = sum(fLP3_loop_RNA2_IPTG)/(sum(fLP3_loop_DNA2)),
+         DNA_sum = (sum(fLP3_loop_DNA2)+sum(fLP3_loop_DNA1)),
+         RNA_exp_12 = (RNA_exp_1+RNA_exp_2)/2,
+         RNA_exp_12_IPTG = (RNA_exp_1_IPTG+RNA_exp_2_IPTG)/2) %>% 
+  ungroup() %>% 
+  select(variant, RNA_exp_1, RNA_exp_2, RNA_exp_1_IPTG, RNA_exp_2_IPTG,RNA_exp_12, RNA_exp_12_IPTG, DNA_sum, num_barcodes, bc_cv) %>% 
+  distinct() 
+
+# read in reference so we can label mapping file
+ref <- read.table('../raw_data/looping_architectures/looping_lib_v2_controls_clean.txt', col.names= c('name', 'sequence')) %>% mutate(name = as.character(name), sequence = as.character(sequence))
+
+# add reverse complement for each sequence so we can properly label everything
+ref_with_rc <- ref %>% 
+    mutate(name = paste0(name, '_rc'),
+           sequence = as.character(reverseComplement(DNAStringSet(sequence)))) %>% 
+    select(name, sequence) %>% 
+    bind_rows(select(ref, name, sequence)) %>% 
+    # trim primers so sequence is 150 to match sequence in barcode map
+    mutate(variant = toupper(substr(sequence, 25, 174)))
+
+# add variant name from reference
+exp_out <- loop_MOPS %>% 
+    left_join(select(ref_with_rc, -sequence), by = 'variant') %>% na.omit() %>% mutate(name=gsub('>', '', .$name)) %>% rbind(.,pos_loop)
+
+
+#write out data frame
+write.table(exp_out, "../processed_data/fLP3.loop_MOPS_glu_expression.txt", quote = F, row.names = F)
+loop_MOPS <- read.table("../processed_data/fLP3.loop_MOPS_glu_expression.txt", header = T)
+#write.csv(loop_MOPS, "../data/FLP3_loop_MOPS_glu_expression.csv", row.names=F)
+```
+
