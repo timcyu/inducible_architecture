@@ -2,22 +2,26 @@
 knitr::opts_knit$set(root.dir = '../processed_data')
 ```
 
-```{r}
-library("ggplot2")
-library("dplyr")
-library("tidyr")
+```{r, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 library(viridis)
 require(cowplot)
+theme_set(theme_cowplot())
 require(forcats)
 library(ggsignif)
 ```
 
 ```{r}
 # read in master data frame
-induce_exp <- read.table("LacZ_variant_exp.txt", header = T)
+induce_exp <- read.table("../processed_data/LacZ_variant_exp.txt", header = T)
 
 # split reg elements apart
 induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+# save data table for input
+write.table(induce_combo, '../processed_data/data_tables/Figure2.txt')
 ```
 
 ```{r}

@@ -2,6 +2,17 @@
 knitr::opts_knit$set(root.dir = '../processed_data')
 ```
 
+```{r, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(viridis)
+require(cowplot)
+theme_set(theme_cowplot())
+require(forcats)
+library(ggsignif)
+```
+
 ```{r}
 induce_exp <- read.table("LacZ_variant_exp.txt", header = T)
 options(digits=3)
@@ -221,7 +232,6 @@ c4b <- ggplot(induce_steric, aes(x = sum_RNA_exp_UnInduced_1, y = sum_RNA_exp_Un
         axis.text.x = element_text(size = 16), 
         axis.text.y = element_text(size = 16))
 
-
 combo <- plot_grid(h1, c1a, c1b, ncol=3)
 distal <- plot_grid(h2, c2a, c2b, ncol=3)
 multiple <- plot_grid(h3, c3a, c3b, ncol=3)
@@ -229,15 +239,19 @@ steric <- plot_grid(h4, c4a, c4b, ncol=3)
 plot_grid(combo,multiple,distal,steric,ncol=1,labels='AUTO')
 ggsave('../FigureSX/FigureS2.pdf', height = 16, width = 17)
 rm(h1, c1a, c1b, h3, c3a, c3b, h2, c2a, c2b, h4, c4a, c4b)
+
+# save data table as input
+write.table(induce_exp, '../processed_data/data_tables/FigureS2.txt')
+
 ```
 
 ```{r}
 # Figure S3: Pcombo supplements
 A <- induce_combo %>%
-  filter(Proximal == 'lacOsym', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  filter(Distal == 'lacOsym', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
   gather(Type, Expression, 'normalized_RNA_exp_Induced_12':'normalized_RNA_exp_UnInduced_12') %>%
-  ggplot(aes(x = Distal, y = Expression)) + geom_line(color = 'black', size =1, alpha = 1) + geom_point(aes(fill = Type), pch = 21, color = 'black', size = 8, alpha = 1) +
-  scale_fill_viridis(discrete = TRUE, direction = -1, name = 'Condition', labels = c("Induced Expression", "Uninduced Expression")) +
+  ggplot(aes(x = Proximal, y = Expression)) + geom_line(color = 'black', size = 1, alpha = 0.7) + geom_point(aes(color = Type), size = 10, alpha = 0.7) +
+  scale_color_viridis(discrete = TRUE, direction = -1, name = 'Condition', labels = c("Induced Expression", "Uninduced Expression")) +
   scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20),
         axis.text.y = element_text(size = 20),
@@ -272,6 +286,9 @@ rm(a1,a2)
 
 plot_grid(A,B, labels='AUTO', ncol = 1)
 ggsave('../FigureSX/FigureS3.pdf', height = 12, width = 16)
+
+# save data table as input
+write.table(induce_combo, '../processed_data/data_tables/FigureS3.txt')
 ```
 
 ```{r}
@@ -383,8 +400,11 @@ geom_text(aes(label=signif(ratio, 3)), size=5) +
         axis.title.y.left = element_text(size = 21))
 C <- plot_grid(FC2, FC1)
 
-plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20, rel_widths = c(1, 1))
-ggsave('../FigureSX/FigureS5.pdf', width = 15.5, height = 15)
+plot_grid(A,B, ncol = 1, labels = 'AUTO', label_size = 20, rel_widths = c(1, 1))
+ggsave('../FigureSX/FigureS5.pdf', width = 15.5, height = 10)
+
+# save data table as input
+write.table(combo_multiple_comp, '../processed_data/data_tables/FigureS5.txt')
 ```
 
 ```{r}
@@ -446,6 +466,9 @@ ggplot(aes(x = Min_10, y = Min_35)) +
 
 plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20) 
 ggsave('../FigureSX/FigureS6.pdf', width = 13, height = 22)
+
+# save data table as input
+write.table(induce_distal, '../processed_data/data_tables/FigureS6.txt')
 ```
 
 ```{r}
@@ -459,7 +482,6 @@ temp1 <- rbind(up_326x_ext_10, up_326x_ext_UV5)
 temp2 <- rbind(temp1, no_up_ext_10)
 steric_box <- rbind(temp2, no_up_ext_UV5)
 rm(temp1, temp2, up_326x_ext_10, up_326x_ext_UV5, no_up_ext_10, no_up_ext_UV5)
-#pal4 <- brewer.pal(n=4, name ='RdBu')
 
 A <- steric_box %>%
   filter(Proximal == 'lacOscram', Core == 'lacOscram') %>%
@@ -478,8 +500,9 @@ A <- steric_box %>%
 B <- induce_steric %>%
   mutate(ProximalPos = ifelse(Loop_Distance == '55', '+30', '+11')) %>%
   ggplot(aes(x=ProximalPos, y=ratio)) +
-  geom_jitter(aes(fill = ProximalPos), pch=21, color='black',alpha=1, size=3, width = 0.3) +
-  geom_boxplot(outlier.shape=NA, fill = NA) + 
+  geom_violin(aes(fill = ProximalPos), trim = FALSE, alpha = 0.9) +
+  #geom_jitter(aes(fill = ProximalPos), pch=21, color='black',alpha=1, size=3, width = 0.3) +
+  #geom_boxplot(outlier.shape=NA, fill = NA) + 
   scale_fill_manual(values=c("darkslateblue", "#de6fa1")) +
   labs(y = 'Fold-change', x = 'Proximal site position') +
   theme(axis.text.x = element_text(size = 20), 
@@ -509,6 +532,9 @@ C <- induce_steric %>%
 plot_grid(A,B,C,labels='AUTO', ncol = 3, label_size = 20)
 ggsave('../FigureSX/FigureS7.pdf', width = 18, height = 7)
 
+# save data table as input
+write.table(steric_box, '../processed_data/data_tables/FigureS7_A.txt')
+write.table(induce_steric, '../processed_data/data_tables/FigureS7_BC.txt')
 ```
 
 ```{r}
@@ -593,6 +619,9 @@ b <- library_comp %>%
 
 plot_grid(f,a,b, ncol=3, labels = 'AUTO')
 ggsave('../FigureSX/FigureS8.pdf', height = 5, width = 18)
+
+# save data table as input
+write.table(library_comp, '../processed_data/data_tables/FigureS8.txt')
 ```
 
 ```{r}
@@ -613,6 +642,7 @@ N_unind <- filter(uninduced, Architecture == 'N')$avg_GFP.OD
 
 C1_unind <- filter(uninduced, Architecture == 'C1')$avg_GFP.OD  
 C2_unind <- filter(uninduced, Architecture == 'C2')$avg_GFP.OD  
+
 tit1 <-titration %>% 
     filter(Concentration != '1e-04') %>%
     filter(Architecture == 'C1' | Architecture == 'C2' | Architecture == 'UV5' | Architecture == 'N') %>%
@@ -625,17 +655,19 @@ tit1 <-titration %>%
     mutate(FC = ifelse(Architecture == 'C1', avg_GFP.OD/C1_unind, 
                 ifelse(Architecture == 'C2', avg_GFP.OD/C2_unind,
                 ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
-    mutate(SEM = sd(FC)/sqrt(n())) %>%
+    mutate(SEM = sd(log2(FC))/sqrt(n())) %>%
     ungroup() %>%
-    ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
-    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+    ggplot(aes(x=log10(Concentration), y=log2(FC), colour = Architecture, linetype = Architecture)) +
+    geom_hline(yintercept=c(0, 2.5, 5), color='grey70', linetype = 'dotted', size = 0.75) + 
+    geom_errorbar(aes(ymin=log2(FC)-SEM, ymax=log2(FC)+SEM), width=.1, linetype = 'solid', color = 'black') +
     geom_point(size = 3, alpha = 0.75) +
   geom_line() + 
   scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pcombo 1', 'Pcombo 2', 'Constitutive', 'lacUV5')) +
   scale_color_manual(values = c("#75af4f", "#bbd7a6", "black", "grey50"), labels= c('Pcombo 1', 'Pcombo 2', 'Constitutive', 'lacUV5')) +
-  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
-  theme(axis.text = element_text(size = 16),
-         axis.title = element_text(size = 20),
+  ylim(-1.3, 6.64) +
+  labs(y = expression('log'[2]~'(Fold-change)'), x = expression('log'[10]~'(mM IPTG)')) +
+  theme(axis.text = element_text(size = 15),
+         axis.title = element_text(size = 16),
          legend.text = element_text(size = 15))
 
 # MULTIPLE
@@ -653,16 +685,18 @@ tit2 <- titration %>%
     mutate(FC = ifelse(Architecture == 'M1', avg_GFP.OD/M1_unind, 
                 ifelse(Architecture == 'M2', avg_GFP.OD/M2_unind,
                 ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
-    mutate(SEM = sd(FC)/sqrt(n())) %>%
+    mutate(SEM = sd(log2(FC))/sqrt(n())) %>%
   ungroup() %>%
-  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
-    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+  ggplot(aes(x=log10(Concentration), y=log2(FC), colour = Architecture, linetype = Architecture)) +
+      geom_hline(yintercept=c(0, 2.5, 5), color='grey70', linetype = 'dotted', size = 0.75) + 
+    geom_errorbar(aes(ymin=log2(FC)-SEM, ymax=log2(FC)+SEM), width=.1, linetype = 'solid', color = 'black') +
 geom_point(size = 3, alpha = 0.75) + geom_line() +
   scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pmultiple 1', 'Pmultiple 2', 'Constitutive', 'lacUV5')) +
   scale_color_manual(values = c("#e39225", "#ECB469", "black", "grey50"), labels= c('Pmultiple 1', 'Pmultiple 2', 'Constitutive', 'lacUV5')) +
-  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
-    theme(axis.text = element_text(size = 16),
-         axis.title = element_text(size = 20),
+  ylim(-1.3, 6.64) +
+  labs(y = expression('log'[2]~'(Fold-change)'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 15),
+         axis.title = element_text(size = 16),
          legend.text = element_text(size = 15))
 
 # DISTAL
@@ -680,16 +714,18 @@ tit3 <- titration %>%
     mutate(FC = ifelse(Architecture == 'D1', avg_GFP.OD/D1_unind, 
                 ifelse(Architecture == 'D2', avg_GFP.OD/D2_unind,
                 ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
-    mutate(SEM = sd(FC)/sqrt(n())) %>%
+    mutate(SEM = sd(log2(FC))/sqrt(n())) %>%
   ungroup() %>%
-  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
-  geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') +
+  ggplot(aes(x=log10(Concentration), y=log2(FC), colour = Architecture, linetype = Architecture)) +
+      geom_hline(yintercept=c(0, 2.5, 5), color='grey70', linetype = 'dotted', size = 0.75) + 
+  geom_errorbar(aes(ymin=log2(FC)-SEM, ymax=log2(FC)+SEM), width=.1, linetype = 'solid', color = 'black') +
 geom_point(size = 3, alpha = 0.75) + geom_line() +
     scale_linetype_manual(values = c("solid", "solid", "dashed", "solid"), labels= c('Pspacer 1', 'Pspacer 2', 'Constitutive', 'lacUV5')) +
   scale_color_manual(values = c("#3b9bb3", "#c2e0e7", "black", "grey50"), labels= c('Pspacer 1', 'Pspacer 2', 'Constitutive', 'lacUV5')) +
-  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
-    theme(axis.text = element_text(size = 16),
-         axis.title = element_text(size = 20),
+  ylim(-1.3, 6.64) +
+  labs(y = expression('log'[2]~'(Fold-change)'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 15),
+         axis.title = element_text(size = 16),
          legend.text = element_text(size = 15))
 
 # STERIC
@@ -707,17 +743,22 @@ tit4 <- titration %>%
   mutate(FC = ifelse(Architecture == 'S1', avg_GFP.OD/S1_unind, 
                 ifelse(Architecture == 'S2', avg_GFP.OD/S2_unind,
                 ifelse(Architecture == 'UV5', avg_GFP.OD/UV5_unind, avg_GFP.OD/N_unind)))) %>%
-  mutate(SEM = sd(FC)/sqrt(n())) %>%
+  mutate(SEM = sd(log2(FC))/sqrt(n())) %>%
   ungroup() %>%
-  ggplot(aes(x=log10(Concentration), y=FC, colour = Architecture, linetype = Architecture)) +
-    geom_errorbar(aes(ymin=FC-SEM, ymax=FC+SEM), width=.1, linetype = 'solid', color = 'black') + geom_point(size = 3, alpha = 0.75) + geom_line() +
+  ggplot(aes(x=log10(Concentration), y=log2(FC), colour = Architecture, linetype = Architecture)) +
+      geom_hline(yintercept=c(0, 2.5, 5), color='grey70', linetype = 'dotted', size = 0.75) + 
+    geom_errorbar(aes(ymin=log2(FC)-SEM, ymax=log2(FC)+SEM), width=.1, linetype = 'solid', color = 'black') + geom_point(size = 3, alpha = 0.75) + geom_line() +
   scale_linetype_manual(values = c("dashed", "solid", "solid", "solid"), labels= c('Constitutive', 'Psteric 1', 'Psteric 2', 'lacUV5')) +
   scale_color_manual(values = c("black", "#c13b41", "#f3bfbb", "grey50"), labels= c('Constitutive', 'Psteric 1', 'Psteric 2', 'lacUV5')) +
-  labs(y = expression('FC'), x = expression('log'[10]~'(mM IPTG)')) +
-    theme(axis.text = element_text(size = 16),
-         axis.title = element_text(size = 20),
+  ylim(-2.5, 6.64) +
+  labs(y = expression('log'[2]~'(Fold-change)'), x = expression('log'[10]~'(mM IPTG)')) +
+    theme(axis.text = element_text(size = 15),
+         axis.title = element_text(size = 16),
          legend.text = element_text(size = 15))
 
 plot_grid(tit1, tit2, tit3, tit4, ncol = 2)
 ggsave('../FigureSX/FigureS9.pdf', height = 6, width = 9)
+
+# save data table as input
+write.table(titration, '../processed_data/data_tables/FigureS9.txt')
 ```

@@ -1,0 +1,76 @@
+---
+title: "Figure3"
+output: html_document
+---
+
+```{r, include = FALSE}
+library(dplyr)
+library(ggplot2)
+require(cowplot)
+```
+
+```{r}
+model_data = read.table('~/Desktop/ModelExp/modelExp.txt', sep = '\t', header = TRUE)
+```
+
+```{r}
+# Figure 3D
+
+A <- model_data %>% 
+  mutate(CoreProm = ifelse(E10 == 0 & E35 == -1.96, "Cons10:Cons35", 
+                    ifelse(E10 == 0 & E35 == 0.66, "Cons10:Mut35",
+                    ifelse(E10 == 3.77 & E35 == -1.96, "Mut10:Cons35", "Mut10:Mut35")))) %>%
+  filter(Edist == -2.09) %>%
+  group_by(CoreProm) %>%
+  mutate(norm_unind_exp = (uninduced_exp-min(uninduced_exp))/(max(uninduced_exp)-min(uninduced_exp))) %>%
+  ggplot(aes(x = -Eprox, y = log2(uninduced_exp))) + 
+  stat_smooth(aes(color = CoreProm), method = "lm", formula = y ~ poly(x, 7), se = FALSE) +
+  geom_point(aes(color = CoreProm), size = 1.2) +
+  scale_color_manual(values = c("#E39E22", "#90B13F", "#6E7835", "#5C82B7")) +
+  labs(x = "-E proximal", y = "log2(Uninduced Exp)") +
+  theme(axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=14))
+
+B <- model_data %>% 
+  mutate(CoreProm = ifelse(E10 == 0 & E35 == -1.96, "Cons10:Cons35", 
+                    ifelse(E10 == 0 & E35 == 0.66, "Cons10:Mut35",
+                    ifelse(E10 == 3.77 & E35 == -1.96, "Mut10:Cons35", "Mut10:Mut35")))) %>%
+  filter(Edist == -2.09) %>%
+  group_by(CoreProm) %>%
+  mutate(norm_ind_exp = (induced_exp-min(induced_exp))/(max(induced_exp)-min(induced_exp))) %>%
+  ggplot(aes(x = -Eprox, y = log2(induced_exp))) + 
+  stat_smooth(aes(color = CoreProm), method = "lm", formula = y ~ poly(x, 6), se = FALSE) +
+  geom_point(aes(color = CoreProm), size = 1.2) +
+  scale_color_manual(values = c("#E39E22", "#90B13F", "#6E7835", "#5C82B7")) +
+  labs(x = "-E proximal", y = "log2(Induced Exp)") +
+  theme(axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=14))
+
+
+C <- model_data %>% 
+  mutate(CoreProm = ifelse(E10 == 0 & E35 == -1.96, "Cons10:Cons35", 
+                    ifelse(E10 == 0 & E35 == 0.66, "Cons10:Mut35",
+                    ifelse(E10 == 3.77 & E35 == -1.96, "Mut10:Cons35", "Mut10:Mut35")))) %>%
+  filter(Edist == -2.09) %>%
+  group_by(CoreProm) %>%
+  mutate(norm_FC = (fold_change-min(fold_change))/(max(fold_change)-min(fold_change))) %>%
+  ggplot(aes(x = -Eprox, y = norm_FC)) + 
+  stat_smooth(aes(color = CoreProm), method = "lm", formula = y ~ poly(x, 12), se = FALSE) +
+  geom_point(aes(color = CoreProm), size = 1.2) +
+  scale_color_manual(values = c("#E39E22", "#90B13F", "#6E7835", "#5C82B7")) +
+  labs(x = "-E proximal", y = "Normalized Fold-change") +
+  theme(axis.title.x=element_text(size=18),
+        axis.title.y=element_text(size=18),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=14))
+
+plot_grid(A,B,C, ncol=1)
+
+ggsave('../Figure3/Figure3D.pdf', height = 10, width = 9)
+```
+
+

@@ -2,12 +2,13 @@
 knitr::opts_knit$set(root.dir = '../processed_data')
 ```
 
-```{r}
-library("ggplot2")
-library("dplyr")
-library("tidyr")
+```{r, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 library(viridis)
 require(cowplot)
+theme_set(theme_cowplot())
 require(forcats)
 library(ggsignif)
 library(RColorBrewer)
@@ -54,6 +55,9 @@ geom_text(aes(label=signif(mean_diff, 3)), size=5) +
          title = element_text(size = 24),
          legend.text = element_text(size = 20))
 ggsave('../Figure4/Figure4A.pdf', width = 10, height = 8)
+
+# data file for input
+write.table(combo_multiple_comp, '../processed_data/data_tables/Figure4A.txt')
 ```
 
 ```{r}
@@ -79,6 +83,9 @@ test$Condition <- factor(test$Condition)
 levels(test$Condition) <- c('Induced', 'UnInduced')
 test <- arrange(transform(test, Condition=factor(Condition,levels=c('UnInduced', 'Induced'))),Condition)
 
+nrow(filter(test, Library == 'COMBO', Condition == 'Induced')) # 157
+nrow(filter(test, Library == 'DISTAL', Condition == 'Induced')) # 148
+
 # Induced and uninduced expression plot
 test %>%
   ggplot(aes(x=Library, y=log2(Expression))) +
@@ -96,8 +103,14 @@ test %>%
   facet_wrap(~Condition, scales = 'fixed') 
 ggsave('../Figure4/Figure4B1.pdf', height = 5, width = 6)
 
+# data file for input
+write.table(test, '../processed_data/data_tables/Figure4B1.txt')
+
 # Fold change plot
 fc <- bind_rows(temp_combo, temp_dist) 
+nrow(filter(fc, Library == 'COMBO')) # 157
+nrow(filter(fc, Library == 'DISTAL')) # 148
+
 fc <- fc %>%
    mutate(Prox.Core = coalesce(Proximal, Core)) %>%
    select(Library, Prox.Core, Distal, Min_10, Min_35, ratio)
@@ -114,6 +127,9 @@ ggplot(fc, aes(x = Library, y = log2(ratio))) +
         axis.title = element_text(size = 20),
         title = element_text(size = 24))
 ggsave('../Figure4/Figure4B2.pdf', height = 5, width = 3.5)
+
+# data file for input
+write.table(fc, '../processed_data/data_tables/Figure4B2.txt')
 ```
 
 ```{r}
@@ -129,8 +145,6 @@ temp2 <- rbind(temp1, no_up_ext_10)
 steric_box <- rbind(temp2, no_up_ext_UV5)
 rm(temp1, temp2, up_326x_ext_10, up_326x_ext_UV5, no_up_ext_10, no_up_ext_UV5)
 
-pal4 <- brewer.pal(n=4, name ='RdBu')
-
 steric_box %>%
   filter(Proximal == 'lacO1', Core == 'lacO1') %>%
   ggplot(., aes(fill = Min_10, y = ratio, x = category)) +
@@ -140,22 +154,25 @@ steric_box %>%
          title = element_text(size = 24),
          legend.text = element_text(size = 15))
 ggsave('../Figure4/Figure4C.pdf', width = 7, height = 5)
+
+# data file for input
+write.table(steric_box, '../processed_data/data_tables/Figure4C.txt')
 ```
 
 ```{r}
 # Figure 4D: Violin plots of each library
-
 neg <- induce_exp %>% filter(grepl("neg", name))
 neg_2mad_Induced <- median(neg$normalized_RNA_exp_Induced_12) + 2*mad(neg$normalized_RNA_exp_Induced_12)
 neg_2mad_Uninduced <- median(neg$normalized_RNA_exp_UnInduced_12) + 2*mad(neg$normalized_RNA_exp_UnInduced_12)
 neg_2mad_FC <-  median(neg$ratio) + 2*mad(neg$ratio)
 
 rel_ops <- c('lacOsym', 'lacO1', 'lacO2', 'lacO3', 'lacOscram')
-A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
+data <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 29)) %>%
   bind_rows(., induce_multiple) %>%
   bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
-  filter(log2(ratio) >= 1) %>%
-  ggplot(aes(x = Library, y = log2(ratio))) + 
+  filter(log2(ratio) >= 1)
+
+A <- ggplot(data, aes(x = Library, y = log2(ratio))) + 
   geom_hline(yintercept = log2(neg_2mad_FC), linetype = 'dashed', size = 1) +
   scale_y_discrete(limits = c(1,2,3,4,5)) +
   geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
@@ -168,11 +185,7 @@ A <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops)
         title = element_text(size = 24),
         legend.position = 'none')
 
-B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
-  bind_rows(., induce_multiple) %>%
-  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
-  filter(log2(ratio) >= 1) %>%
-  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_UnInduced_12))) + 
+B <- ggplot(data, aes(x = Library, y = log2(normalized_RNA_exp_UnInduced_12))) + 
   geom_hline(yintercept = log2(neg_2mad_Uninduced), linetype = 'dashed', size = 1) +
   scale_y_discrete(limits = c(0,2,4)) +
   geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
@@ -185,11 +198,7 @@ B <-bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops),
         title = element_text(size = 24),
         legend.position = 'none')
 
-C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
-  bind_rows(., induce_multiple) %>%
-  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
-  filter(log2(ratio) >= 1) %>%
-  ggplot(aes(x = Library, y = log2(normalized_RNA_exp_Induced_12))) + 
+C <- ggplot(data, aes(x = Library, y = log2(normalized_RNA_exp_Induced_12))) + 
   geom_hline(yintercept = log2(neg_2mad_Induced), linetype = 'dashed', size = 1) +
   scale_y_discrete(limits = c(0,3,6,9)) +
   geom_violin(aes(fill = Library), trim = FALSE, alpha = 1, lwd =0.75) + 
@@ -201,21 +210,21 @@ C <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops)
         axis.title = element_text(size = 20),
         title = element_text(size = 24),
         legend.position = 'none')
+
 plot_grid(B,C,A, ncol = 1)
 
-numbers <- bind_rows(filter(induce_combo, Proximal %in% rel_ops & Distal %in% rel_ops), filter(induce_distal, Offset == 22)) %>%
-  bind_rows(., induce_multiple) %>%
-  bind_rows(., filter(induce_steric, Loop_Distance == 55)) %>%
-  filter(log2(ratio) >= 1)
-
-dim(filter(numbers, grepl("COMBO", Library)))
-dim(filter(numbers, grepl("DISTAL", Library)))
-dim(filter(numbers, grepl("STERIC", Library)))
-dim(filter(numbers, grepl("MULTIPLE", Library)))
+dim(filter(data, grepl("COMBO", Library)))
+dim(filter(data, grepl("DISTAL", Library)))
+dim(filter(data, grepl("STERIC", Library)))
+dim(filter(data, grepl("MULTIPLE", Library)))
 
 ggsave('../Figure4/Figure4D.pdf', height = 13, width = 13)
-```
 
+# data file for input
+write.table(data, '../processed_data/data_tables/Figure4D.txt')
+
+rm(data, A, B, C)
+```
 
 ```{r}
 # significance testing for Figure 4D
@@ -255,41 +264,6 @@ for(i in 1:6) {
 } 
 I_corrected_sig_table = I_sig_table %>% mutate(FDR = p.adjust(P, method = 'BH'))
 ```
-
-```{r}
-# Figure 4D
-top10combo <- induce_combo %>% 
-  filter(Proximal %in% rel_ops & Distal %in% rel_ops) %>%
-  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
-top10distal <- induce_distal %>%
-  filter(Offset == 22) %>% 
-  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
-top10multiple <- induce_multiple %>% top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
-top10steric <- induce_steric %>%
-  filter(Loop_Distance == 55) %>% 
-  top_n(25, wt = ratio/normalized_RNA_exp_UnInduced_12)
-
-inducible <- bind_rows(top10combo, top10distal, top10multiple, top10steric)
-
-maxCombo <- top_n(top10combo, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
-maxDistal <- top_n(top10distal, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
-maxMultiple <- top_n(top10multiple, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
-maxSteric <- top_n(top10steric, 1, wt=normalized_RNA_exp_Induced_12)$normalized_RNA_exp_Induced_12
-
-inducible %>%
-  mutate(orderExp = normalized_RNA_exp_UnInduced_12) %>%
-  gather(Type, Expression, 'normalized_RNA_exp_Induced_12':'normalized_RNA_exp_UnInduced_12') %>%
-  ggplot(aes(x = reorder(name, orderExp), y = Expression)) + geom_line(aes(color = Library), size =2, alpha = 1) + geom_point(aes(fill = Type), pch = 21, color = 'black', size =3.5) + theme(axis.text.x = element_blank()) +
-  scale_color_manual(values = c('#75af4f', '#3b9bb3', '#e39225', '#c13b41')) + 
-  scale_fill_manual(values = c("skyblue", "grey")) + 
-  geom_hline(yintercept = maxCombo, color = '#75af4f', linetype = 'dashed', size = 1.5, alpha = 0.8) +
-  geom_hline(yintercept = maxDistal, color = '#3b9bb3', linetype = 'dashed', size = 1.5, alpha = 0.8) +
-  geom_hline(yintercept = maxMultiple, color = '#e39225', linetype = 'dashed', size = 1.5, alpha = 0.8) +
-  geom_hline(yintercept = maxSteric, color = '#c13b41', linetype = 'dashed', size = 1.5, alpha = 0.8) +
-  labs(x = 'Variant')
-#ggsave('~/Desktop/InducibleArchitectures/Figure4/Figure4E.pdf', height = 4, width = 15)
-```
-
 
 ```{r}
 # small calculations
