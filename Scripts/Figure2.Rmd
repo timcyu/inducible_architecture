@@ -20,8 +20,13 @@ induce_exp <- read.table("../processed_data/LacZ_variant_exp.txt", header = T)
 # split reg elements apart
 induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
 
+# create table for figure 3
+fig3 <- induce_combo %>% select(Distal, Min_35, Min_10, Proximal, normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)
+
 # save data table for input
-write.table(induce_combo, '../processed_data/data_tables/Figure2.txt')
+write.table(induce_combo, '../source_data/Figure2.txt', quote = F, row.names = F, sep = '\t')
+write.csv(fig3, '../source_data/Figure3.csv', quote = F, row.names = F)
+
 ```
 
 ```{r}

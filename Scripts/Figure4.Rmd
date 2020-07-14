@@ -57,7 +57,7 @@ geom_text(aes(label=signif(mean_diff, 3)), size=5) +
 ggsave('../Figure4/Figure4A.pdf', width = 10, height = 8)
 
 # data file for input
-write.table(combo_multiple_comp, '../processed_data/data_tables/Figure4A.txt')
+write.table(combo_multiple_comp, '../source_data/Figure4A.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -104,7 +104,7 @@ test %>%
 ggsave('../Figure4/Figure4B1.pdf', height = 5, width = 6)
 
 # data file for input
-write.table(test, '../processed_data/data_tables/Figure4B1.txt')
+write.table(test, '../source_data/Figure4B1.txt', quote = F, row.names = F, sep = '\t')
 
 # Fold change plot
 fc <- bind_rows(temp_combo, temp_dist) 
@@ -129,7 +129,8 @@ ggplot(fc, aes(x = Library, y = log2(ratio))) +
 ggsave('../Figure4/Figure4B2.pdf', height = 5, width = 3.5)
 
 # data file for input
-write.table(fc, '../processed_data/data_tables/Figure4B2.txt')
+write.table(fc, '../source_data/Figure4B2.txt', quote = F, row.names = F, sep = '\t')
+
 ```
 
 ```{r}
@@ -156,7 +157,8 @@ steric_box %>%
 ggsave('../Figure4/Figure4C.pdf', width = 7, height = 5)
 
 # data file for input
-write.table(steric_box, '../processed_data/data_tables/Figure4C.txt')
+write.table(fc, '../source_data/Figure4C.txt', quote = F, row.names = F, sep = '\t')
+
 ```
 
 ```{r}
@@ -221,7 +223,8 @@ dim(filter(data, grepl("MULTIPLE", Library)))
 ggsave('../Figure4/Figure4D.pdf', height = 13, width = 13)
 
 # data file for input
-write.table(data, '../processed_data/data_tables/Figure4D.txt')
+write.table(fc, '../source_data/Figure4D.txt', quote = F, row.names = F, sep = '\t')
+
 
 rm(data, A, B, C)
 ```

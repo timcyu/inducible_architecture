@@ -241,7 +241,7 @@ ggsave('../FigureSX/FigureS2.pdf', height = 16, width = 17)
 rm(h1, c1a, c1b, h3, c3a, c3b, h2, c2a, c2b, h4, c4a, c4b)
 
 # save data table as input
-write.table(induce_exp, '../processed_data/data_tables/FigureS2.txt')
+write.table(induce_exp, '../source_data/FigureS2.txt', quote = F, row.names = F, sep = '\t')
 
 ```
 
@@ -288,7 +288,7 @@ plot_grid(A,B, labels='AUTO', ncol = 1)
 ggsave('../FigureSX/FigureS3.pdf', height = 12, width = 16)
 
 # save data table as input
-write.table(induce_combo, '../processed_data/data_tables/FigureS3.txt')
+write.table(induce_combo, '../source_data/FigureS3.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -404,7 +404,7 @@ plot_grid(A,B, ncol = 1, labels = 'AUTO', label_size = 20, rel_widths = c(1, 1))
 ggsave('../FigureSX/FigureS5.pdf', width = 15.5, height = 10)
 
 # save data table as input
-write.table(combo_multiple_comp, '../processed_data/data_tables/FigureS5.txt')
+write.table(combo_multiple_comp, '../source_data/FigureS5.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -468,7 +468,7 @@ plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20)
 ggsave('../FigureSX/FigureS6.pdf', width = 13, height = 22)
 
 # save data table as input
-write.table(induce_distal, '../processed_data/data_tables/FigureS6.txt')
+write.table(induce_distal, '../source_data/FigureS6.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -533,8 +533,8 @@ plot_grid(A,B,C,labels='AUTO', ncol = 3, label_size = 20)
 ggsave('../FigureSX/FigureS7.pdf', width = 18, height = 7)
 
 # save data table as input
-write.table(steric_box, '../processed_data/data_tables/FigureS7_A.txt')
-write.table(induce_steric, '../processed_data/data_tables/FigureS7_BC.txt')
+write.table(steric_box, '../source_data/FigureS7_A.txt', quote = F, row.names = F, sep = '\t')
+write.table(induce_steric, '../source_data/FigureS7_BC.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -621,7 +621,7 @@ plot_grid(f,a,b, ncol=3, labels = 'AUTO')
 ggsave('../FigureSX/FigureS8.pdf', height = 5, width = 18)
 
 # save data table as input
-write.table(library_comp, '../processed_data/data_tables/FigureS8.txt')
+write.table(library_comp, '../source_data/FigureS8.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -760,5 +760,5 @@ plot_grid(tit1, tit2, tit3, tit4, ncol = 2)
 ggsave('../FigureSX/FigureS9.pdf', height = 6, width = 9)
 
 # save data table as input
-write.table(titration, '../processed_data/data_tables/FigureS9.txt')
+write.table(titration, '../source_data/FigureS9.txt', quote = F, row.names = F, sep = '\t')
 ```
