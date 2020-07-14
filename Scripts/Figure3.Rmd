@@ -3,14 +3,19 @@ title: "Figure3"
 output: html_document
 ---
 
+```{r setup}
+knitr::opts_knit$set(root.dir = '../processed_data')
+```
+
 ```{r, include = FALSE}
 library(dplyr)
 library(ggplot2)
 require(cowplot)
+theme_set(theme_cowplot())
 ```
 
 ```{r}
-model_data = read.table('~/Desktop/ModelExp/modelExp.txt', sep = '\t', header = TRUE)
+model_data = read.table('../processed_data/modelExp.txt', sep = '\t', header = TRUE)
 ```
 
 ```{r}
