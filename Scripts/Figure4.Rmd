@@ -32,7 +32,11 @@ induce_steric$Min_10 <- with(induce_steric, reorder(Min_10, ratio, median))
 induce_steric$Core <- with(induce_steric, reorder(Core, ratio, median))
 induce_steric$Proximal <- with(induce_steric, reorder(Proximal, ratio, median))
 
-induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F) %>% mutate(induction = ratio/normalized_RNA_exp_UnInduced_12)
+induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+induce_multiple_fig3 <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F) %>% select(variant, name, Distal_left, Distal_right, Min_35, Min_10, Proximal, normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12, ratio)
+
+write.table(induce_multiple_fig3, '../source_data/fig3_induce_multiple.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}

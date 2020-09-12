@@ -1,0 +1,23 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2512
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 ArialMT;}
+{\colortbl;\red255\green255\blue255;\red255\green255\blue255;\red26\green26\blue26;}
+{\*\expandedcolortbl;;\cssrgb\c100000\c100000\c100000\c0;\cssrgb\c13348\c13348\c13331;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\margl1440\margr1440\vieww18320\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \cb2 #Thermodynamic model information\
+\
+\
+\pard\pardeftab720\partightenfactor0
+\cf3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 Everything should work provided that you run the code in order and that you have both\'a0induce_combo.csv\'a0and\'a0fig3_induce _multiple.txt\'a0in the same directory for the import statements (both files are attached for convenience). A few quick notes:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\cf3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 The sections containing the previous code start with\'a0Fitting Entire Data Set, and used the full suite of Pcombo data to determine the best-fit parameters\
+\ls1\ilvl0\cf3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\cf3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 The new section\'a0Training on a Subset of Data\'a0uses a part of the data to predict the remaining gene expression measurements. For each fraction, the code runs on 20 different subsets, so it takes several minutes to run. To speed things up, I commented that code and canned the results below (so that you can instantly recreate the plot), but if you are welcome to uncomment the code and run it for yourself, if desired. (A fun fact: I use\'a0SeedRandom so the pseudo-random choices made will be fully reproducible.)\
+\ls1\ilvl0\cf3 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\cf3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 The final section called\'a0Predicting Expression for the Double Distal Promoter Architecture\'a0predicts the Pmultiple data using the Pcombo parameters. This code requires you to evaluate the previous section (Fitting Entire Data Set: Gene Expression at 0mM and 1mM IPTG). My suggestion is that if you want to make the two new figures, first run all code in the entire notebook (Ctrl+A followed by Shift+Enter), after which everything should evaluate properly. If you run into any issues, please let me know.\
+}

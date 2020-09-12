@@ -26,7 +26,6 @@ fig3 <- induce_combo %>% select(Distal, Min_35, Min_10, Proximal, normalized_RNA
 # save data table for input
 write.table(induce_combo, '../source_data/Figure2.txt', quote = F, row.names = F, sep = '\t')
 write.csv(fig3, '../source_data/Figure3.csv', quote = F, row.names = F)
-
 ```
 
 ```{r}

@@ -292,7 +292,7 @@ write.table(induce_combo, '../source_data/FigureS3.txt', quote = F, row.names = 
 ```
 
 ```{r}
-# Figure S5: Pmultiple supplement - Induced/Uninduced comparison with Pcombo heatmap
+# Figure S6: Pmultiple supplement - Induced/Uninduced comparison with Pcombo heatmap
 temp <- induce_combo
 colnames(temp)[colnames(temp) == "Distal"] <- "Distal_right"
 combo_multiple_comp <- left_join(temp, induce_multiple, by = c("Distal_right", 'Min_10', "Min_35", "Proximal"))
@@ -401,14 +401,14 @@ geom_text(aes(label=signif(ratio, 3)), size=5) +
 C <- plot_grid(FC2, FC1)
 
 plot_grid(A,B, ncol = 1, labels = 'AUTO', label_size = 20, rel_widths = c(1, 1))
-ggsave('../FigureSX/FigureS5.pdf', width = 15.5, height = 10)
+ggsave('../FigureSX/FigureS6.pdf', width = 15.5, height = 10)
 
 # save data table as input
-write.table(combo_multiple_comp, '../source_data/FigureS5.txt', quote = F, row.names = F, sep = '\t')
+write.table(combo_multiple_comp, '../source_data/FigureS6.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
-# Figure S6: Pspacer Supp
+# Figure S7: Pspacer Supp
 
 induce_distal <- induce_distal %>%
   mutate(realOffset = as.numeric(Offset) + 26) 
@@ -465,14 +465,14 @@ ggplot(aes(x = Min_10, y = Min_35)) +
   labs(x = '-10 Element', y = '-35 Element')
 
 plot_grid(A,B,C, ncol = 1, labels = 'AUTO', label_size = 20) 
-ggsave('../FigureSX/FigureS6.pdf', width = 13, height = 22)
+ggsave('../FigureSX/FigureS7.pdf', width = 13, height = 22)
 
 # save data table as input
-write.table(induce_distal, '../source_data/FigureS6.txt', quote = F, row.names = F, sep = '\t')
+write.table(induce_distal, '../source_data/FigureS7.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
-# Figure S7: Psteric supplement - Although weak, if any, transcription was detected from promoters with only a -10, we found that relatively strong promoters could be created by the addition of an UP-element and extended -10 
+# Figure S8: Psteric supplement - Although weak, if any, transcription was detected from promoters with only a -10, we found that relatively strong promoters could be created by the addition of an UP-element and extended -10 
 
 up_326x_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'up_326x_ext_10') 
 up_326x_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'up_326x_ext_UV5')
@@ -530,15 +530,15 @@ C <- induce_steric %>%
         legend.position = 'none')
 
 plot_grid(A,B,C,labels='AUTO', ncol = 3, label_size = 20)
-ggsave('../FigureSX/FigureS7.pdf', width = 18, height = 7)
+ggsave('../FigureSX/FigureS8.pdf', width = 18, height = 7)
 
 # save data table as input
-write.table(steric_box, '../source_data/FigureS7_A.txt', quote = F, row.names = F, sep = '\t')
-write.table(induce_steric, '../source_data/FigureS7_BC.txt', quote = F, row.names = F, sep = '\t')
+write.table(steric_box, '../source_data/FigureS8_A.txt', quote = F, row.names = F, sep = '\t')
+write.table(induce_steric, '../source_data/FigureS8_BC.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
-# Figure S8: Correlations between RNAseq and Flow
+# Figure S9: Correlations between RNAseq and Flow
 comp <- read.table('../raw_data/newFlowComparison.txt', header = TRUE)
 options(digits=3)
 
@@ -618,10 +618,10 @@ b <- library_comp %>%
         axis.title.y.left = element_text(size = 16))
 
 plot_grid(f,a,b, ncol=3, labels = 'AUTO')
-ggsave('../FigureSX/FigureS8.pdf', height = 5, width = 18)
+ggsave('../FigureSX/FigureS9.pdf', height = 5, width = 18)
 
 # save data table as input
-write.table(library_comp, '../source_data/FigureS8.txt', quote = F, row.names = F, sep = '\t')
+write.table(library_comp, '../source_data/FigureS9.txt', quote = F, row.names = F, sep = '\t')
 ```
 
 ```{r}
@@ -757,8 +757,8 @@ tit4 <- titration %>%
          legend.text = element_text(size = 15))
 
 plot_grid(tit1, tit2, tit3, tit4, ncol = 2)
-ggsave('../FigureSX/FigureS9.pdf', height = 6, width = 9)
+ggsave('../FigureSX/FigureS10.pdf', height = 6, width = 9)
 
 # save data table as input
-write.table(titration, '../source_data/FigureS9.txt', quote = F, row.names = F, sep = '\t')
+write.table(titration, '../source_data/FigureS10.txt', quote = F, row.names = F, sep = '\t')
 ```
