@@ -22,7 +22,6 @@ options(stringsAsFactors = F)
 
 Read in Data and format names
 ```{r}
-
 loop_MOPS <- read.table("../processed_data/fLP3.loop_MOPS_glu_expression.txt", header = T)
 
 loop_MOPS$name <- gsub("offset", "", loop_MOPS$name)
@@ -55,11 +54,13 @@ ggplot(TF_spacing, aes(x=num_barcodes)) +
         axis.title.y.left = element_text(size = 24))
 
 ggsave('../FigureSX/FigureS1.pdf', units = 'in', width = 7.29, height = 4.51)
+
+nrow(TF_spacing) # n = 615
+write.table(TF_spacing, '../source_data/Figure1_EFG_S1.txt', row.names = FALSE, quote = FALSE)
 ```
 
 What percent of library variants were tested?
 ```{r}
-
 #What percent of variants were tested?
 full_library <- read.table("../raw_data/looping_architectures/looping_lib_v2_controls_clean.txt", col.names = c('name', 'sequence'))
 full_library$name <- gsub("offset", "", full_library$name)
@@ -104,16 +105,14 @@ subset(loop_MOPS, grepl("_ind_", loop_MOPS$name)) %>%
         axis.title.y.left = element_text(size = 24))
 
 ggsave('../Figure1/Figure1D.pdf', units = 'in',  width = 6, height = 6)
-
+fig1D_source = subset(loop_MOPS, grepl("_ind_", loop_MOPS$name)) %>% subset(!grepl('apFAB',.$name)) 
+write.table(fig1D_source, '../source_data/Figure1D.txt', row.names = FALSE, quote = FALSE)
 ```
 
 #Figure 1E - Repression by proximal site
 
 ```{r}
-
 #STATISTICAL TEST PERFORMED AT END OF other script, barcodeQuant_LacZSpacing.Rmd 
-
-
 mean_proximal <- TF_spacing %>% filter(Proximal == 'proximal' & Background == 'ind', Distal == 'nodistal') %>%
     group_by(TF) %>%
     mutate(mean_expression_proximal = mean(RNA_exp_12)) %>%
@@ -127,12 +126,10 @@ mean_noproximal <- TF_spacing %>% filter(Proximal == 'nullproximal' & Background
     ungroup() %>%
     select(TF, mean_expression_noproximal) %>% distinct()
 
-
-
 znull <-as.data.frame(cbind(c(as.numeric(1)), c("znull"))) %>% mutate(V1 = as.numeric(V1))
 names(znull) <- c('relative_repression', 'TF')
 
-test<- data.frame() %>% mutate(TF='znull', relative_repression = 1)
+test <- data.frame() %>% mutate(TF='znull', relative_repression = 1)
 
 b <- left_join(mean_proximal, mean_noproximal, by = 'TF') %>%
     mutate(relative_repression = mean_expression_proximal/mean_expression_noproximal) %>%
@@ -151,13 +148,11 @@ b <- left_join(mean_proximal, mean_noproximal, by = 'TF') %>%
                 legend.position = 'none')
 b
 #The top part of figure 1d is produced in the barcodeQuant_LacZSpacing.Rmd script
-ggsave('../Figure1/Figure1E.pdf', units = 'in', width = 12, height = 4)
+ggsave('../Figure1/Figure1E_bottom.pdf', units = 'in', width = 12, height = 4)
 ```
 
 Figure 1F - Repression by lone Distal site
 ```{r}
-
-
 #Here we add a 3bp windown centered around 115.5, a repression optima determined by Johannes Muller et al. 1996
 in_phase=data.frame(x1=c(102.5,114,125), x2=c(105.5,117,128), y1=c(.75,.75,.75), y2=c(1.35,1.35,1.35))
 

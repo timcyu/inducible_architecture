@@ -11,7 +11,12 @@ options(stringsAsFactors = F)
 
 library(tidyverse)
 library(Biostrings)
-library(dplyr)
+#library(dplyr)
+library("wesanderson")
+names(wes_palettes)
+require(cowplot)
+pal <- wes_palette('Zissou1', 6, type = 'continuous')
+
 ```
 
 
@@ -22,7 +27,7 @@ library(dplyr)
 filelist = list.files(path = '../raw_data/looping_architectures/', pattern = 'fLP3_loop*')
 
 for(i in filelist) {
-  x <- read.table(paste('../raw_data/looping_architectures/', i, sep = ''), col.names=c(i, 'barcode'), header = F)
+  x <- read.table(paste('../raw_data/looping_architectures/',i, sep = ''), col.names=c(i, 'barcode'), header = F)
   x[[i]] <- 1000000*x[[i]]/sum(x[[i]])  #Normalizes by RPM
   assign(i,x)  
 }
@@ -130,5 +135,105 @@ exp_out <- loop_MOPS %>%
 write.table(exp_out, "../processed_data/fLP3.loop_MOPS_glu_expression.txt", quote = F, row.names = F)
 loop_MOPS <- read.table("../processed_data/fLP3.loop_MOPS_glu_expression.txt", header = T)
 #write.csv(loop_MOPS, "../data/FLP3_loop_MOPS_glu_expression.csv", row.names=F)
+  
 ```
+
+Get table for barcode stats
+```{r}
+
+loop_MOPS$name <- gsub("offset", "", loop_MOPS$name)
+loop_MOPS$name <- gsub("_cap", "", loop_MOPS$name)
+loop_MOPS$name <- gsub("lac_bg", "lac", loop_MOPS$name)
+
+loop_vars <- loop_MOPS %>% separate(col = 'name', 
+                                    into = c("TF", "Distal", "Offset", "Background", 'Proximal') , 
+                                    sep = "_", remove = F) 
+
+loop_vars <- loop_vars[!is.na(loop_vars$Proximal),]
+loop_vars$Offset <- as.numeric(loop_vars$Offset)
+
+TF_spacing <- filter(loop_vars, Background == 'ind')
+
+mean_proximal <- TF_spacing %>% filter(Proximal == 'proximal' & Background == 'ind', Distal == 'nodistal') %>% 
+                    mutate(type = "proximal") %>%
+                    select(variant, type, TF) %>% left_join(., Compare_barcode_Reps, by = 'variant') %>%
+                    filter(fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0) %>%
+                    mutate(RNA_exp_1 = fLP3_loop_RNA1/fLP3_loop_DNA1,
+                           RNA_exp_2 = fLP3_loop_RNA2/fLP3_loop_DNA2,
+                           RNA_exp_12 = RNA_exp_1+RNA_exp_2/2) %>% filter(RNA_exp_12 < Inf) %>% na.omit()
+                    
+
+mean_noproximal <- TF_spacing %>% filter(Proximal == 'nullproximal' & Background == 'ind', Distal == 'nodistal') %>%
+                    mutate(type = "no_proximal") %>%
+                    #mutate(type = "no_proximal", TF= 'znull') %>%
+                    select(variant, type, TF) %>% left_join(., Compare_barcode_Reps, by = 'variant') %>%
+                    filter(fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0) %>%
+                    mutate(RNA_exp_1 = fLP3_loop_RNA1/fLP3_loop_DNA1,
+                           RNA_exp_2 = fLP3_loop_RNA2/fLP3_loop_DNA2,
+                           RNA_exp_12 = RNA_exp_1+RNA_exp_2/2) %>% filter(RNA_exp_12 < Inf) %>% na.omit()
+
+#So which proximal sites significantly reduce expression?
+
+#AraC significance
+t.test(filter(mean_proximal, TF=='AraC')$RNA_exp_12, filter(mean_noproximal, TF=='AraC')$RNA_exp_12)
+#t = -1.8712, df = 38.074, p-value = 0.06902
+
+#GalR significance
+t.test(filter(mean_proximal, TF=='GalR')$RNA_exp_12, filter(mean_noproximal, TF=='GalR')$RNA_exp_12)
+#t = -8.8765, df = 123.35, p-value = 6.675e-15
+
+#glpR significance
+t.test(filter(mean_proximal, TF=='GlpR')$RNA_exp_12, filter(mean_noproximal, TF=='GlpR')$RNA_exp_12)
+#t = 0.55018, df = 81.305, p-value = 0.5837
+
+#LacI significance
+t.test(filter(mean_proximal, TF=='LacI')$RNA_exp_12, filter(mean_noproximal, TF=='LacI')$RNA_exp_12)
+#t = -6.2226, df = 40.349, p-value = 2.221e-07
+
+#LldR significance
+t.test(filter(mean_proximal, TF=='LldR')$RNA_exp_12, filter(mean_noproximal, TF=='LldR')$RNA_exp_12)
+#t = -0.72306, df = 111.74, p-value = 0.4712
+
+#PurR significance
+t.test(filter(mean_proximal, TF=='PurR')$RNA_exp_12, filter(mean_noproximal, TF=='PurR')$RNA_exp_12)
+#t = -8.2582, df = 247.26, p-value = 8.973e-15
+
+mean_noproximal <- TF_spacing %>% filter(Proximal == 'nullproximal' & Background == 'ind', Distal == 'nodistal') %>%
+                    #mutate(type = "no_proximal") %>%
+                    mutate(type = "no_proximal", TF= 'znull') %>%
+                    select(variant, type, TF) %>% left_join(., Compare_barcode_Reps, by = 'variant') %>%
+                    filter(fLP3_loop_DNA1 > 0 | fLP3_loop_DNA2 > 0) %>%
+                    mutate(RNA_exp_1 = fLP3_loop_RNA1/fLP3_loop_DNA1,
+                           RNA_exp_2 = fLP3_loop_RNA2/fLP3_loop_DNA2,
+                           RNA_exp_12 = RNA_exp_1+RNA_exp_2/2) %>% filter(RNA_exp_12 < Inf) %>% na.omit()
+
+rbind(mean_proximal, mean_noproximal) %>% write.table(., "../source_data/Figure1E_top.txt", row.names = F, sep = '\t', quote = FALSE)
+
+temp <- rbind(mean_proximal, mean_noproximal)
+a <- temp %>% 
+  ggplot(aes(TF, RNA_exp_12, fill = TF)) + 
+  stat_boxplot(geom='errorbar', width=.2) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(data = filter(temp, TF != 'znull'), alpha = .2) +
+  ylim(0,4) +
+  annotate('text', x = 'GalR', y = 2, label = "***", size = 8) +
+  annotate('text', x = 'LacI', y = 1.3, label = "***", size = 8) +
+  annotate('text', x = 'PurR', y = 2.4, label = "***", size = 8) +
+  scale_fill_manual(values = c(pal, 'gray60')) +
+   # labs(x = 'Transcription Factor', y = 'Expression', title = "Repression due to proximal site") + 
+   labs(x = '', y = 'Barcode expression\n(RNA/DNA)', title = "Repression due to proximal site") +  
+      scale_x_discrete(expand = c(0,2)) +
+      theme(axis.text.x = element_text(size = 0, angle = 45, hjust = 1), 
+                axis.title.x = element_text(size = 20),
+                axis.text.y = element_text(size = 20), 
+                axis.title.y = element_text(size = 20), 
+                legend.text=element_text(size=20),
+                legend.position = 'none')
+
+
+a
+ggsave('../Figure1/Figure1E_top.pdf', units = 'in', width = 7, height = 3)
+```
+
+
 

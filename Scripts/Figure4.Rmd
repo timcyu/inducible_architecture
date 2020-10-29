@@ -15,7 +15,7 @@ library(RColorBrewer)
 ```
 
 ```{r}
-induce_exp <- read.table("LacZ_variant_exp.txt", header = T)
+induce_exp <- read.table("../processed_data/LacZ_variant_exp.txt", header = T)
 
 induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
 induce_distal <- subset(induce_exp, grepl("DISTAL", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Offset", "Min_35", "Core", "Min_10"), sep = "-", remove = F)

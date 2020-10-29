@@ -14,7 +14,7 @@ library(ggsignif)
 ```
 
 ```{r}
-induce_exp <- read.table("LacZ_variant_exp.txt", header = T)
+induce_exp <- read.table("../processed_data/LacZ_variant_exp.txt", header = T)
 options(digits=3)
 
 induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
@@ -243,6 +243,10 @@ rm(h1, c1a, c1b, h3, c3a, c3b, h2, c2a, c2b, h4, c4a, c4b)
 # save data table as input
 write.table(induce_exp, '../source_data/FigureS2.txt', quote = F, row.names = F, sep = '\t')
 
+nrow(induce_combo) # 1493
+nrow(induce_multiple) # 1638
+nrow(induce_distal) # 3769
+nrow(induce_steric) # 1369
 ```
 
 ```{r}
@@ -289,6 +293,15 @@ ggsave('../FigureSX/FigureS3.pdf', height = 12, width = 16)
 
 # save data table as input
 write.table(induce_combo, '../source_data/FigureS3.txt', quote = F, row.names = F, sep = '\t')
+```
+
+```{r}
+# Figure S5: Training Pcombo thermodynamic model on unseen sequenes
+CV_results = t(read.csv('../source_data/FigureS5A.csv', header = FALSE, row.names = 1)) %>% as.data.frame() %>% select(-`Training Fraction`) %>% gather(Proportion, R2, 1:8)
+CV_results %>% filter(R2 != "Indeterminate") %>% ggplot(aes(x = as.factor(Proportion), y = as.numeric(R2))) +
+  geom_boxplot(fill = "#3C9CB4", alpha = 0.6, outlier.shape = NA) + geom_jitter(pch = 21, fill = "#3C9CB4", alpha = 0.9) +
+  ylim(0, 1) + labs(x = 'Proportion of Data Trained On', y = 'R2 of Predicted vs. Actual Expression')
+ggsave('../FigureSX/FigureS5A_jitter.pdf', height = 5, width = 6.5)
 ```
 
 ```{r}
@@ -625,7 +638,7 @@ write.table(library_comp, '../source_data/FigureS9.txt', quote = F, row.names = 
 ```
 
 ```{r}
-# Figure S9: Plate reader supplement with titration profiles of selected promoters
+# Figure S10: Plate reader supplement with titration profiles of selected promoters
 titration <- read.table("../raw_data/titration.txt", header = T, fill = TRUE)
 
 # COMBO
