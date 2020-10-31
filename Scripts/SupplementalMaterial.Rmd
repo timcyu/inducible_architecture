@@ -775,3 +775,28 @@ ggsave('../FigureSX/FigureS10.pdf', height = 6, width = 9)
 # save data table as input
 write.table(titration, '../source_data/FigureS10.txt', quote = F, row.names = F, sep = '\t')
 ```
+
+```{r}
+# calculating R2 for Figures 3A and S5B
+data = as.data.frame(t(read.csv('../source_data/Figure3A.csv', header = FALSE))) %>%
+  gather(Expression, Values)
+data$Values = gsub("\\{", "", data$Values)
+data$Values = gsub("\\}", "", data$Values) 
+test = data %>% separate(col = "Values", into = c("Actual", "Predicted"), sep = ", ")
+test %>% ggplot(aes(x = as.numeric(Actual), y = as.numeric(Predicted))) + geom_point(aes(color = Expression))
+
+(cor.test(as.numeric(test$Actual), as.numeric(test$Predicted), method = "pearson")$estimate)^2 
+# R2 = 0.79
+
+data = as.data.frame(read.csv('../source_data/FigureS5B.csv', header = FALSE)) %>%
+  gather(Expression, Values)
+data$Values = gsub("\\{", "", data$Values)
+data$Values = gsub("\\}", "", data$Values)
+test = data %>% separate(col = "Values", into = c("Predicted", "Actual"), sep = ", ")
+test$Predicted = as.numeric(test$Predicted)
+test$Actual = as.numeric(test$Actual)
+test %>% ggplot(aes(x = log10(Predicted), y = log10(Actual))) + geom_point(aes(color = Expression))
+
+(cor.test(log10(test$Predicted), log10(test$Actual), method = "pearson")$estimate)^2 
+# R2 = 0.73
+```
