@@ -1,0 +1,1 @@
+Code for reproducing analyses and figures in "Multiplexed characterization of rationally designed promoter architectures deconstructs combinatorial logic for IPTG-inducible systems." The paper can be accessed [here](https://www.nature.com/articles/s41467-020-20094-3).
